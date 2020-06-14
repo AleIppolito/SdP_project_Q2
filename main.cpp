@@ -43,12 +43,6 @@ void handle(int sig) {
 	switch(alg_type){
 		case 1: alg_name= "GRAIL";  break;
 		case 2: alg_name= "GRAILLF";  break;
-		case 3: alg_name= "GRAILBI";  break;
-		case 6: alg_name= "GRAILBILF";  break;
-		case -1: alg_name= "GRAIL*";  break;
-		case -2: alg_name= "GRAIL*LF";  break;
-		case -3: alg_name= "GRAIL*BI";  break;
-		case -6: alg_name= "GRAIL*BILF";  break;
 	}
 
 	cout << "COMPAR: " << alg_name << DIM << "\t" << labeling_time << "\t" << "TOut" << "\t" <<  endl;
@@ -70,18 +64,9 @@ static void usage() {
 		" \t\t\t 1  : Basic Search (used in the original VLDB'10 paper) \n"
 		" \t\t\t 2  : Basic Search + Level Filter \n"
 		" \t\t\t 3  : Bidirectional Search \n"
-		" \t\t\t 6  : Bidirectional Search + Level Filter \n"
-		" \t\t\t -1 : Positive Cut + Basic Search\n"
-		" \t\t\t -2 : Positive Cut + Basic Search + Level Filter (usually provides the best query times) \n"
-		" \t\t\t -3 : Positive Cut + Bidirectional Search \n"
-		" \t\t\t -6 : Positive Cut + Bidirectional Search + Level Filter\n"
 		"	-ltype <labeling_type>		labeling_type can take 6 different values.  Default value is 0.\n"
 		" \t\t\t 0  : Completely randomized traversals.  \n"
 		" \t\t\t 1  : Randomized Reverse Pairs Traversals (usually provides the best quality) \n"
-		" \t\t\t 2  : Heuristicly Guided Traversal: Maximum Volume First \n"
-		" \t\t\t 3  : Heuristicly Guided Traversal: Maximum of Minimum Interval First \n"
-		" \t\t\t 4  : Heuristicly Guided Traversal: Maximum Adjusted Volume First \n"
-		" \t\t\t 5  : Heuristicly Guided Traversal: Maximum of Adjusted Minimum Volume First \n"
 		<< endl;
 }
 
@@ -185,26 +170,7 @@ int main(int argc, char* argv[]) {
 
 
 	int *sccmap;
-	if(!SKIPSCC){
-		sccmap = new int[gsize];					// store pair of orignal vertex and corresponding vertex in merged graph
-		vector<int> reverse_topo_sort;	
 	
-		// merge strongly connected component
-		cout << "merging strongly connected component..." << endl;
-		gettimeofday(&before_time, NULL);
-		GraphUtil::mergeSCC(g, sccmap, reverse_topo_sort);	
-		gettimeofday(&after_time, NULL);
-		query_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 + 
-			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-		cout << "merging time:" << query_time << " (ms)" << endl;
-		cout << "#DAG vertex size:" << g.num_vertices() << "\t#DAG edges size:" << g.num_edges() << endl;
-
-//		g.printGraph();
-//		ofstream outSCC("scc.out");
-//		g.writeGraph(outSCC);
-//		outSCC.close();	
-	}
-
 	GraphUtil::topo_leveler(g);
 
 	// prepare queries
@@ -274,13 +240,10 @@ int main(int argc, char* argv[]) {
 	int reachable = 0, nonreachable =0;
 		
 	for (sit = src.begin(), tit = trg.begin(), lit = labels.begin();sit != src.end(); ++sit, ++tit, ++lit) {
-			if(!SKIPSCC){
-				s = sccmap[*sit];
-				t = sccmap[*tit];
-			}else{
+			
 				s = *sit;
 				t = *tit;
-			}
+			
 
 //			if(grail.bidirectionalReach(s,t,el) != grail.reach(s,t,el)){
 //					cout << "Conflict 1 " << s <<" " << t <<  endl;
@@ -292,13 +255,6 @@ int main(int argc, char* argv[]) {
 			switch(alg_type){
 				case 1: r = grail.reach(s,t,el); break;
 				case 2: r = grail.reach_lf(s,t,el); break;
-				case 3: r = grail.bidirectionalReach(s,t,el); break;
-				case 6: r = grail.bidirectionalReach_lf(s,t,el); break;
-
-				case -1: r = grail.reachPP(s,t,el); break;
-				case -2: r = grail.reachPP_lf(s,t,el); break;
-				case -3: r = grail.bidirectionalReachPP(s,t,el); break;
-				case -6: r = grail.bidirectionalReachPP_lf(s,t,el); break;
 			}
 
 			if(r==true) {
@@ -338,12 +294,6 @@ int main(int argc, char* argv[]) {
 	switch(alg_type){
 		case 1: alg_name= "GRAIL";  break;
 		case 2: alg_name= "GRAILLF"; LEVEL_FILTER=true; break;
-		case 3: alg_name= "GRAILBI";  break;
-		case 6: alg_name= "GRAILBILF"; LEVEL_FILTER=true;  break;
-		case -1: alg_name= "GRAIL*";  break;
-		case -2: alg_name= "GRAIL*LF"; LEVEL_FILTER=true;  break;
-		case -3: alg_name= "GRAIL*BI";  break;
-		case -6: alg_name= "GRAIL*BILF"; LEVEL_FILTER=true;  break;
 	}
 
 	if(grail.PositiveCut==0)
