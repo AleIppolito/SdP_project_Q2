@@ -63,8 +63,6 @@ Grail::Grail(Graph& graph, int Dim, int labelingType, bool pool, int poolsize): 
 			case 1 : Grail::setIndex(graph,i);
 							 Grail::fixedreverselabeling(graph,i);
 							 break;
-			default : 
-							 break;
 		}
 		cout << "Labeling " << i << " is completed" << endl;
 /*		for( int k = 0 ; k < maxid; k++){
@@ -79,10 +77,6 @@ Grail::Grail(Graph& graph, int Dim, int labelingType, bool pool, int poolsize): 
 Grail::~Grail() {
 }
 
-void Grail::set_level_filter(bool lf){
-	LEVEL_FILTER = lf;
-}
-
 
 void Grail::setIndex(Graph& g, int traversal){
 	if(traversal==0){
@@ -94,7 +88,6 @@ void Grail::setIndex(Graph& g, int traversal){
 			random_shuffle(_index.begin(),_index.end());
 	}	
 }
-
 
 
 // compute interval label for each node of tree (pre_order, post_order)
@@ -193,15 +186,9 @@ bool Grail::contains(int src,int trg){
 		for(i=0;i<dim;i++){
 			j = rand()%POOLSIZE;
 			if(g[src].pre->at(j) > g[trg].pre->at(j)) {
-#ifdef DEBUG
-				NegativeCut++;
-#endif
 				return false;
 			}
 			if(g[src].post->at(j) < g[trg].post->at(j)){
-#ifdef DEBUG
-				NegativeCut++;
-#endif
 				return false;
 			}
 		}
@@ -209,15 +196,9 @@ bool Grail::contains(int src,int trg){
 	else{
 		for(i=0;i<dim;i++){
 			if(g[src].pre->at(i) > g[trg].pre->at(i)) {
-#ifdef DEBUG
-				NegativeCut++;
-#endif
 				return false;
 			}
 			if(g[src].post->at(i) < g[trg].post->at(i)){
-#ifdef DEBUG
-				NegativeCut++;
-#endif
 				return false;
 			}
 		}
@@ -225,11 +206,7 @@ bool Grail::contains(int src,int trg){
 	return true;
 }
 
-
 bool Grail::go_for_reach(int src, int trg) {
-#ifdef DEBUG
-	TotalCall++;
-#endif	
 	if(src==trg)
 		return true;
 			
@@ -247,33 +224,57 @@ bool Grail::go_for_reach(int src, int trg) {
 	return false;
 }
 
-bool Grail::go_for_reach_lf(int src, int trg) {
-#ifdef DEBUG
-	TotalCall++;
-#endif	
-	if(src==trg)
+bool Grail::bidirectionalReach(int src,int trg){
+	queue<int> forward;
+	queue<int> backward;
+	if(src == trg )
 		return true;
-			
-	if(g[src].top_level >= g[trg].top_level)		// if using level filter, reject if in a higher topological level
+
+	if(!contains(src,trg))						// if it does not contain reject
 		return false;
-
+	
+	QueryCnt++;
 	visited[src] = QueryCnt;
-	EdgeList el = g.out_edges(src);
-   EdgeList::iterator eit;   
+	forward.push(src);
+	visited[trg] = -QueryCnt;
+	backward.push(trg);
 
-	for (eit = el.begin(); eit != el.end(); eit++) {
-		if(visited[*eit]!=QueryCnt && contains(*eit,trg)){
-			if(go_for_reach_lf(*eit,trg)){
-				return true;
-			}	
-		}
+	EdgeList el;
+	vector<int>::iterator ei;
+	int next;
+	while(!forward.empty() && !backward.empty()){
+
+		next = forward.front();
+		forward.pop();
+		el = g.out_edges(next);
+		//for each child of start node
+			for (ei = el.begin(); ei != el.end(); ei++){
+				if(visited[*ei]==-QueryCnt){
+					return true;
+				}else if(visited[*ei]!=QueryCnt && contains( *ei,trg ) ){
+					forward.push(*ei);
+					visited[*ei] = QueryCnt;
+				}
+			}
+
+		next = backward.front();
+		backward.pop();
+		el = g.in_edges(next);
+
+			for (ei = el.begin(); ei != el.end(); ei++){
+				if(visited[*ei]==QueryCnt){
+					return true;
+				}else if(visited[*ei]!=-QueryCnt && contains(src,*ei) ){
+					backward.push(*ei);
+					visited[*ei]=-QueryCnt;
+				}
+			}
+
 	}
 	return false;
 }
 
-
-
-bool Grail::reach(int src,int trg, ExceptionList* el){
+bool Grail::reach(int src,int trg){
 	if(src == trg){
 		return true;
 	}
@@ -281,33 +282,6 @@ bool Grail::reach(int src,int trg, ExceptionList* el){
 	if(!contains(src,trg))						// if it does not contain reject
 		return false;
 
-	if(el!=NULL){									// if using exception lists
-			if(el->isAnException(src,trg))	// if it is an exception, reject
-				return false;
-			else
-				return true;
-	}
 	visited[src]=++QueryCnt;
 	return go_for_reach(src,trg);
 }
-
-bool Grail::reach_lf(int src,int trg, ExceptionList* el){
-	if(src == trg)
-		return true;
-
-	if(!contains(src,trg))						// if it does not contain reject
-		return false;
-
-	if(g[src].top_level >= g[trg].top_level)		// if using level filter, reject if in a higher topological level
-				return false;
-
-	if(el!=NULL){									// if using exception lists
-			if(el->isAnException(src,trg))	// if it is an exception, reject
-				return false;
-			else
-				return true;
-	}
-	visited[src]=++QueryCnt;
-	return go_for_reach_lf(src,trg);
-}
-

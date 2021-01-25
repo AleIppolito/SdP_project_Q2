@@ -8,7 +8,6 @@ or their institutions liable under any circumstances.
 #define _BOX_H
 
 #include "GraphUtil.h"
-#include "exception_list.h"
 
 // test switch
 #define _TEST_
@@ -21,7 +20,6 @@ class Grail {
 		int dim;
 		int *visited;
 		int QueryCnt;
-		bool LEVEL_FILTER;
 		bool POOL;
 		int POOLSIZE;
 		unsigned int PositiveCut, NegativeCut, TotalCall, TotalDepth, CurrentDepth;
@@ -35,11 +33,10 @@ class Grail {
 		static void fixedreverselabeling(Graph& tree, int traversal);
 		static void setIndex(Graph& tree, int traversal); 
 
-		void set_level_filter(bool lf);
-		bool reach(int src, int trg, ExceptionList * el);
-		bool reach_lf(int src, int trg, ExceptionList * el);
+
+		bool reach(int src, int trg);
+		bool bidirectionalReach(int src, int trg);
 		bool go_for_reach(int src, int trg);
-		bool go_for_reach_lf(int src, int trg);
 		bool contains(int src, int trg);
 		void index_size(int* ind_size);
 };

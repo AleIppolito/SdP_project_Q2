@@ -3,7 +3,8 @@
 **** Author :           Hilmi YILDIRIM      *******************
 **** please contact yildih2@cs.rpi.edu for any problems *******
 ***************************************************************
-// Modified for upload
+THIS PROGRAM HAS BEEN MODIFIED FOR TEH SDP COURSE PROJECT
+
 The code is associated with the following papers:
 1) Grail: scalable reachability index for large graphs ( VLDB'10 paper)
 and
@@ -44,22 +45,12 @@ Description:
         -skip           Skip the phase converting the graph into a dag. Use only when the input is already a DAG.
         -t <alg_type>           alg_type can take 8 different values.  Default value is 1.
                          1  : Basic Search (used in the original VLDB'10 paper) 
-                         2  : Basic Search + Level Filter 
                          3  : Bidirectional Search 
-                         6  : Bidirectional Search + Level Filter 
-                         -1 : Positive Cut + Basic Search
-                         -2 : Positive Cut + Basic Search + Level Filter (usually provides the best query times) 
-                         -3 : Positive Cut + Bidirectional Search 
-                         -6 : Positive Cut + Bidirectional Search + Level Filter
+                       
         -ltype <labeling_type>          labeling_type can take 6 different values.  Default value is 0.
                          0  : Completely randomized traversals.  
                          1  : Randomized Reverse Pairs Traversals (usually provides the best quality) 
-                         2  : Heuristicly Guided Traversal: Maximum Volume First 
-                         3  : Heuristicly Guided Traversal: Maximum of Minimum Interval First 
-                         4  : Heuristicly Guided Traversal: Maximum Adjusted Volume First 
-                         5  : Heuristicly Guided Traversal: Maximum of Adjusted Minimum Volume First 
-
-
+                      
 INPUT GRAPH FORMAT: (see sample.gra)
  Notes : Second line gives the number of nodes n. The node ids should be in [0,n-1]. 
 
