@@ -85,7 +85,7 @@ void Grail::setIndex(Graph& g, int traversal){
 			_index.push_back(i);
 		}
 	}else if(traversal%2==0){
-			random_shuffle(_index.begin(),_index.end());
+		random_shuffle(_index.begin(),_index.end());
 	}	
 }
 

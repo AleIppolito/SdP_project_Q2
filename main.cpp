@@ -11,27 +11,28 @@ or their institutions liable under any circumstances.
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
+#include <csignal>
 #include <cstring>
 
 #include "utils.h"
 
 
-bool SKIPSCC = false;
+bool SKIPSCC = true; // graph will always be a DAG
 bool BIDIRECTIONAL = false;
 int LABELINGTYPE = 0;
 bool UseExceptions = false;
 bool UsePositiveCut = false;
 bool POOL = false;
 int POOLSIZE = 100;
-	int DIM = 2;
-	int query_num = 100000;
-	char* filename = NULL;
-	char* testfilename = NULL;
-	bool debug = false;
-	bool LEVEL_FILTER = false;
-	bool LEVEL_FILTER_I = false;
+int DIM = 2;
+int query_num = 100000;
+char* filename = NULL;
+char* testfilename = NULL;
+bool debug = false;
+bool LEVEL_FILTER = false;
+bool LEVEL_FILTER_I = false;
 
-	float labeling_time, query_time, query_timepart,exceptionlist_time;
+float labeling_time, query_time, query_timepart, exceptionlist_time;
 int alg_type = 1;
 
 void handle(int sig) {
@@ -39,13 +40,13 @@ void handle(int sig) {
 
 	switch(alg_type){
 		case 1: alg_name= "GRAIL";  break;
-		case 2: alg_name= "GRAILLF";  break;
-		case 3: alg_name= "GRAILBI";  break;
-		case 6: alg_name= "GRAILBILF";  break;
-		case -1: alg_name= "GRAIL*";  break;
-		case -2: alg_name= "GRAIL*LF";  break;
-		case -3: alg_name= "GRAIL*BI";  break;
-		case -6: alg_name= "GRAIL*BILF";  break;
+		case 2: alg_name= "GRAILBI";  break;
+		// case 2: alg_name= "GRAILLF";  break;
+		// case 6: alg_name= "GRAILBILF";  break;
+		// case -1: alg_name= "GRAIL*";  break;
+		// case -2: alg_name= "GRAIL*LF";  break;
+		// case -3: alg_name= "GRAIL*BI";  break;
+		// case -6: alg_name= "GRAIL*BILF";  break;
 	}
 
 	cout << "COMPAR: " << alg_name << DIM << "\t" << labeling_time << "\t" << "TOut" << "\t" <<  endl;
@@ -55,30 +56,18 @@ void handle(int sig) {
 
 static void usage() {
 	cout << "\nUsage:\n"
-		" grail [-h] <filename> -test <testfilename> [-dim <DIM>] [-skip] [-ex] [-ltype <labelingtype>] [-t <alg_type>]\n"
+		" grail [-h] <filename> -test <testfilename> [-dim <DIM>] [-ltype <labelingtype>] [-t <alg_type>]\n"
 		"Description:\n"
 		"	-h			Print the help message.\n"
 		"  <filename> is the name of the input graph in gra format.\n"
 		"	-test		Set the queryfile which contains a line of <source> <target> <reachability> for each query. \n"
 		"	-dim 		Set the number of traversals to be performed. The default value is 5.\n"
-		"	-ex 		Use exception lists method instead of pruning. Default is not using exception lists.\n"
-		"	-skip		Skip the phase converting the graph into a dag. Use only when the input is already a DAG.\n"
-		"	-t <alg_type>		alg_type can take 8 different values.  Default value is 1.\n"
+		"	-t <alg_type>		alg_type can take 2 different values.  Default value is 1.\n"
 		" \t\t\t 1  : Basic Search (used in the original VLDB'10 paper) \n"
-		" \t\t\t 2  : Basic Search + Level Filter \n"
-		" \t\t\t 3  : Bidirectional Search \n"
-		" \t\t\t 6  : Bidirectional Search + Level Filter \n"
-		" \t\t\t -1 : Positive Cut + Basic Search\n"
-		" \t\t\t -2 : Positive Cut + Basic Search + Level Filter (usually provides the best query times) \n"
-		" \t\t\t -3 : Positive Cut + Bidirectional Search \n"
-		" \t\t\t -6 : Positive Cut + Bidirectional Search + Level Filter\n"
-		"	-ltype <labeling_type>		labeling_type can take 6 different values.  Default value is 0.\n"
+		" \t\t\t 2  : Bidirectional Search \n"
+		"	-ltype <labeling_type>		labeling_type can take 2 different values.  Default value is 0.\n"
 		" \t\t\t 0  : Completely randomized traversals.  \n"
 		" \t\t\t 1  : Randomized Reverse Pairs Traversals (usually provides the best quality) \n"
-		" \t\t\t 2  : Heuristicly Guided Traversal: Maximum Volume First \n"
-		" \t\t\t 3  : Heuristicly Guided Traversal: Maximum of Minimum Interval First \n"
-		" \t\t\t 4  : Heuristicly Guided Traversal: Maximum Adjusted Volume First \n"
-		" \t\t\t 5  : Heuristicly Guided Traversal: Maximum of Adjusted Minimum Volume First \n"
 		<< endl;
 }
 
@@ -104,21 +93,18 @@ static void parse_args(int argc, char *argv[]){
 			i++;
 			DIM = atoi(argv[i++]);
 		}
+
+		// testfilename = argv[++i];		// we will always have a test file for queries
+
 		else if (strcmp("-test", argv[i]) == 0) {
 			i++;
 			testfilename = argv[i++];
-		}else if(strcmp("-skip", argv[i])== 0) {
-			i++;
-			SKIPSCC = true;
 		}else if(strcmp("-ltype", argv[i])== 0) {
 			i++;
 			LABELINGTYPE = atoi(argv[i++]);
 		}else if(strcmp("-t", argv[i])== 0) {
 			i++;
 			alg_type = atoi(argv[i++]);
-		}else if(strcmp("-ex", argv[i])== 0) {
-			i++;
-			UseExceptions = true;
 		}else if(strcmp("-bi", argv[i])== 0) {
 			i++;
 			BIDIRECTIONAL = true;
@@ -166,25 +152,25 @@ int main(int argc, char* argv[]) {
 
 
 	int *sccmap;
-	if(!SKIPSCC){
-		sccmap = new int[gsize];					// store pair of orignal vertex and corresponding vertex in merged graph
-		vector<int> reverse_topo_sort;	
-	
-		// merge strongly connected component
-		cout << "merging strongly connected component..." << endl;
-		gettimeofday(&before_time, NULL);
-		GraphUtil::mergeSCC(g, sccmap, reverse_topo_sort);	
-		gettimeofday(&after_time, NULL);
-		query_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 + 
-			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-		cout << "merging time:" << query_time << " (ms)" << endl;
-		cout << "#DAG vertex size:" << g.num_vertices() << "\t#DAG edges size:" << g.num_edges() << endl;
-
+//	if(!SKIPSCC){
+//		sccmap = new int[gsize];					// store pair of orignal vertex and corresponding vertex in merged graph
+//		vector<int> reverse_topo_sort;
+//
+//		// merge strongly connected component
+//		cout << "merging strongly connected component..." << endl;
+//		gettimeofday(&before_time, NULL);
+//		GraphUtil::mergeSCC(g, sccmap, reverse_topo_sort);
+//		gettimeofday(&after_time, NULL);
+//		query_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
+//			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
+//		cout << "merging time:" << query_time << " (ms)" << endl;
+//		cout << "#DAG vertex size:" << g.num_vertices() << "\t#DAG edges size:" << g.num_edges() << endl;
+//
 //		g.printGraph();
 //		ofstream outSCC("scc.out");
 //		g.writeGraph(outSCC);
 //		outSCC.close();	
-	}
+//	}
 
 	GraphUtil::topo_leveler(g);
 
@@ -242,13 +228,13 @@ int main(int argc, char* argv[]) {
 	int reachable = 0, nonreachable =0;
 		
 	for (sit = src.begin(), tit = trg.begin(), lit = labels.begin();sit != src.end(); ++sit, ++tit, ++lit) {
-			if(!SKIPSCC){
-				s = sccmap[*sit];
-				t = sccmap[*tit];
-			}else{
-				s = *sit;
-				t = *tit;
-			}
+//		if(!SKIPSCC){
+			s = sccmap[*sit];
+			t = sccmap[*tit];
+//		}else{
+//			s = *sit;
+//			t = *tit;
+//		}
 
 //			if(grail.bidirectionalReach(s,t,el) != grail.reach(s,t,el)){
 //					cout << "Conflict 1 " << s <<" " << t <<  endl;
@@ -257,20 +243,20 @@ int main(int argc, char* argv[]) {
 //					cout << "Conflict 2 " << s <<" " << t <<  endl;
 //			}
 
-			switch(alg_type){
-				case 1: r = grail.reach(s,t); break;
-				case 2: r = grail.bidirectionalReach(s,t); break;
-			}
+		switch(alg_type){
+			case 1: r = grail.reach(s,t); break;
+			case 2: r = grail.bidirectionalReach(s,t); break;
+		}
 
-			if(r==true) {
-				reachable++;
-   	      if(*lit == 0) {
+		if(r==true) {
+			reachable++;
+			if(*lit == 0) {
 //            	cout << "False positive pair = " << s << " " << t << " " << *lit << endl;
 //							cout << "Levels : " << s << "->" << g[s].top_level << " " << t << "->" << g[t].top_level << endl;
             	fail++;
          	} else {
-						success++;
-					}
+         		success++;
+         	}
       	}
       	else {
 				nonreachable++;
