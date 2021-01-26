@@ -61,7 +61,7 @@ bool Graph::incrementalContains(int src,int trg,int cur){
 }
 
 void Graph::strTrimRight(string& str) {
-	string whitespaces(" \t");
+	string whitespaces(" \t\r");
 	int index = str.find_last_not_of(whitespaces);
 	if (index != string::npos) 
 		str.erase(index+1);
