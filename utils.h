@@ -63,7 +63,7 @@ float print_mem_usage() {
     unsigned data;//       data/stack
     unsigned dt;//         dirty pages (unused in Linux 2.6)
     // fscanf(pf, "%u" %u %u %u %u %u", &size, &resident, &share, &text, &lib, &data);
-    fscanf(pf, "%u", &size);
+    // fscanf(pf, "%u", &size);
     cout << std::setprecision(4) << size/1024.0 << " MB mem used" << endl;
   }
 	return size/1024.0;	

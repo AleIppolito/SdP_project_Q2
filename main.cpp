@@ -36,7 +36,7 @@ float labeling_time, query_time, query_timepart, exceptionlist_time;
 int alg_type = 1;
 
 void handle(int sig) {
- 	char *alg_name;
+ 	char const *alg_name;
 
 	switch(alg_type){
 		case 1: alg_name= "GRAIL";  break;
@@ -229,11 +229,11 @@ int main(int argc, char* argv[]) {
 		
 	for (sit = src.begin(), tit = trg.begin(), lit = labels.begin();sit != src.end(); ++sit, ++tit, ++lit) {
 //		if(!SKIPSCC){
-			s = sccmap[*sit];
-			t = sccmap[*tit];
+//			s = sccmap[*sit];
+//			t = sccmap[*tit];
 //		}else{
-//			s = *sit;
-//			t = *tit;
+			s = *sit;
+			t = *tit;
 //		}
 
 //			if(grail.bidirectionalReach(s,t,el) != grail.reach(s,t,el)){
@@ -251,23 +251,23 @@ int main(int argc, char* argv[]) {
 		if(r==true) {
 			reachable++;
 			if(*lit == 0) {
-//            	cout << "False positive pair = " << s << " " << t << " " << *lit << endl;
-//							cout << "Levels : " << s << "->" << g[s].top_level << " " << t << "->" << g[t].top_level << endl;
-            	fail++;
-         	} else {
-         		success++;
-         	}
-      	}
-      	else {
-				nonreachable++;
-         	if(*lit == 1) {
-//            	cout << "False negative pair = " << s << " " << t << " " << *lit << endl;
-            	fail++;
-         	}
-         	else   success++;
+				cout << "False positive pair = " << s << " " << t << " " << *lit << endl;
+				cout << "Levels : " << s << "->" << g[s].top_level << " " << t << "->" << g[t].top_level << endl;
+				fail++;
+			} else {
+				success++;
 			}
-		}	
-		cout << "Success Rate " << success << "/" << success+fail << endl;
+		} else {
+			nonreachable++;
+			if(*lit == 1) {
+				cout << "False negative pair = " << s << " " << t << " " << *lit << endl;
+				fail++;
+			} else {
+				success++;
+			}
+		}
+	}
+	cout << "Success Rate " << success << "/" << success+fail << endl;
 
 	gettimeofday(&after_time, NULL);
 	query_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 + 
@@ -280,7 +280,7 @@ int main(int argc, char* argv[]) {
 	cout << "filename = " << filename << "\t testfilename = " << (testfilename ? testfilename:"Random") << "\t DIM = " << DIM <<endl;  
 	cout << "Labeling_time = " << labeling_time  << "\t Query_Time = " << query_time << "\t Index_Size = " << gsize*DIM*2  << "\t Mem_Usage = " << print_mem_usage() << " MB"<< endl;
 	
-	char *alg_name;
+	char const *alg_name;
 
 	switch(alg_type){
 		case 1: alg_name= "GRAIL";  break;
