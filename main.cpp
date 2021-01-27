@@ -20,19 +20,13 @@ or their institutions liable under any circumstances.
 bool SKIPSCC = true; // graph will always be a DAG
 bool BIDIRECTIONAL = false;
 int LABELINGTYPE = 0;
-bool UseExceptions = false;
-bool UsePositiveCut = false;
-bool POOL = false;
-int POOLSIZE = 100;
 int DIM = 2;
 int query_num = 100000;
 char* filename = NULL;
 char* testfilename = NULL;
 bool debug = false;
-bool LEVEL_FILTER = false;
-bool LEVEL_FILTER_I = false;
 
-float labeling_time, query_time, query_timepart, exceptionlist_time;
+float labeling_time, query_time, query_timepart;
 int alg_type = 1;
 
 void handle(int sig) {
@@ -41,12 +35,6 @@ void handle(int sig) {
 	switch(alg_type){
 		case 1: alg_name= "GRAIL";  break;
 		case 2: alg_name= "GRAILBI";  break;
-		// case 2: alg_name= "GRAILLF";  break;
-		// case 6: alg_name= "GRAILBILF";  break;
-		// case -1: alg_name= "GRAIL*";  break;
-		// case -2: alg_name= "GRAIL*LF";  break;
-		// case -3: alg_name= "GRAIL*BI";  break;
-		// case -6: alg_name= "GRAIL*BILF";  break;
 	}
 
 	cout << "COMPAR: " << alg_name << DIM << "\t" << labeling_time << "\t" << "TOut" << "\t" <<  endl;
@@ -84,19 +72,11 @@ static void parse_args(int argc, char *argv[]){
 		if (strcmp("-h", argv[i]) == 0) {
 			usage();
 			exit(0);
-		}		
-		if (strcmp("-n", argv[i]) == 0) {
-			i++;
-			query_num = atoi(argv[i++]);
 		}
 		else if (strcmp("-dim", argv[i]) == 0) {
 			i++;
 			DIM = atoi(argv[i++]);
-		}
-
-		// testfilename = argv[++i];		// we will always have a test file for queries
-
-		else if (strcmp("-test", argv[i]) == 0) {
+		}else if (strcmp("-test", argv[i]) == 0) {
 			i++;
 			testfilename = argv[i++];
 		}else if(strcmp("-ltype", argv[i])== 0) {
@@ -109,12 +89,7 @@ static void parse_args(int argc, char *argv[]){
 			i++;
 			BIDIRECTIONAL = true;
 			alg_type *=3;
-		}else if(strcmp("-pool", argv[i])== 0) {
-			i++;
-			POOL = true;
-			POOLSIZE = atoi(argv[i++]);
-		}
-		else {
+		}else {
 			filename = argv[i++];
 		}
 	}
@@ -142,7 +117,7 @@ int main(int argc, char* argv[]) {
 	
 	Graph g(infile);
 	cout << "#vertex size:" << g.num_vertices() << "\t#edges size:" << g.num_edges() << endl;
-	
+
 	int s, t;
 	int left = 0;
 	int gsize = g.num_vertices();
@@ -151,64 +126,33 @@ int main(int argc, char* argv[]) {
 	struct timeval after_time, before_time, after_timepart, before_timepart;
 
 
-	int *sccmap;
-//	if(!SKIPSCC){
-//		sccmap = new int[gsize];					// store pair of orignal vertex and corresponding vertex in merged graph
-//		vector<int> reverse_topo_sort;
-//
-//		// merge strongly connected component
-//		cout << "merging strongly connected component..." << endl;
-//		gettimeofday(&before_time, NULL);
-//		GraphUtil::mergeSCC(g, sccmap, reverse_topo_sort);
-//		gettimeofday(&after_time, NULL);
-//		query_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
-//			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-//		cout << "merging time:" << query_time << " (ms)" << endl;
-//		cout << "#DAG vertex size:" << g.num_vertices() << "\t#DAG edges size:" << g.num_edges() << endl;
-//
-//		g.printGraph();
-//		ofstream outSCC("scc.out");
-//		g.writeGraph(outSCC);
-//		outSCC.close();	
-//	}
-
-	GraphUtil::topo_leveler(g);
 
 	// prepare queries
 	srand48(time(NULL));
 	cout << "preparing queries..." << endl;
 	vector<int> src;
 	vector<int> trg;
-	vector<int> labels;
-	vector<int>::iterator sit, tit, lit;
+	vector<char> labels;
+	vector<int>::iterator sit, tit;
+	vector<char>::iterator lit;
 	int success=0,fail=0;
 	int label;
-	if(testfilename==NULL){
-		while (left < query_num) {
-			s = lrand48() % gsize; 
-			t = lrand48() % gsize; 
-			if (s == t) continue;
-			src.push_back(s);
-			trg.push_back(t);
-			++left;
-		}
-	}else{
       std::ifstream fstr(testfilename);
-		while(!fstr.eof()) {
-         fstr >> s >> t >> label;
+		while(fstr >> s >> t >> label) {
 			src.push_back(s);
 			trg.push_back(t);
 			labels.push_back(label);
 		}
-	}
 
 	cout << "queries are ready" << endl;
 
 
 	gettimeofday(&before_time, NULL);
 
-	int dimension ;
-	Grail grail(g,DIM,LABELINGTYPE,POOL,POOLSIZE);
+	/**************
+	 * Labeling happens here
+	 */
+	Grail grail(g,DIM,LABELINGTYPE);
 
 	gettimeofday(&after_time, NULL);
 
@@ -218,7 +162,9 @@ int main(int argc, char* argv[]) {
 	
 
 
-	// process queries
+	/**************
+	 * Query processing happens here
+	 */
 	cout << "process queries..." << endl;
 	gettimeofday(&before_time, NULL);
 	gettimeofday(&before_timepart, NULL);
@@ -228,20 +174,10 @@ int main(int argc, char* argv[]) {
 	int reachable = 0, nonreachable =0;
 		
 	for (sit = src.begin(), tit = trg.begin(), lit = labels.begin();sit != src.end(); ++sit, ++tit, ++lit) {
-//		if(!SKIPSCC){
-//			s = sccmap[*sit];
-//			t = sccmap[*tit];
-//		}else{
+
 			s = *sit;
 			t = *tit;
-//		}
 
-//			if(grail.bidirectionalReach(s,t,el) != grail.reach(s,t,el)){
-//					cout << "Conflict 1 " << s <<" " << t <<  endl;
-//			}
-//			if(grail.bidirectionalReachPP(s,t,el) != grail.reachPP(s,t,el)){
-//					cout << "Conflict 2 " << s <<" " << t <<  endl;
-//			}
 
 		switch(alg_type){
 			case 1: r = grail.reach(s,t); break;
@@ -250,7 +186,7 @@ int main(int argc, char* argv[]) {
 
 		if(r==true) {
 			reachable++;
-			if(*lit == 0) {
+			if(*lit == '0') {
 				cout << "False positive pair = " << s << " " << t << " " << *lit << endl;
 				cout << "Levels : " << s << "->" << g[s].top_level << " " << t << "->" << g[t].top_level << endl;
 				fail++;
@@ -259,7 +195,7 @@ int main(int argc, char* argv[]) {
 			}
 		} else {
 			nonreachable++;
-			if(*lit == 1) {
+			if(*lit == '1') {
 				cout << "False negative pair = " << s << " " << t << " " << *lit << endl;
 				fail++;
 			} else {
@@ -284,7 +220,7 @@ int main(int argc, char* argv[]) {
 
 	switch(alg_type){
 		case 1: alg_name= "GRAIL";  break;
-		case 3: alg_name= "GRAILBI";  break;
+		case 2: alg_name= "GRAILBI";  break;
 	}
 
 	if(grail.PositiveCut==0)

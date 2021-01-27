@@ -5,7 +5,7 @@ There is no additional support offered, nor are the author(s)
 or their institutions liable under any circumstances.
 */
 #include "Grail.h"
-#include "TCSEstimator.h"
+//#include "TCSEstimator.h"
 #include <queue>
 
 vector<int> _index;
@@ -32,20 +32,14 @@ GRAIL LABELING :
 		2- SetIndex - an auxillary function that is used by fixed reverse pairs
 		3- fixedreverselabeling - labels with fixed reverse random ordering
 		4- randomlabeling - random ordering
-		5- mingaplabeling - heuristics
 		6- fixedreversevisit - used by fixedreverselabeling
 		7- visit - used by random labeling
-		8- mingapvisit - used by min gap labeling
 *******************************************************************************************/
 
-Grail::Grail(Graph& graph, int Dim, int labelingType, bool pool, int poolsize): g(graph),dim(Dim), POOL(pool), POOLSIZE(poolsize) {
+Grail::Grail(Graph& graph, int Dim, int labelingType): g(graph),dim(Dim) {
 	int i,maxid = g.num_vertices();
 	visited = new int[maxid];
 	QueryCnt = 0;
-	cout << "Graph Size = " << maxid << endl;
-	if(labelingType >=2){
-		TCSEstimator tcse(graph,100);
-	}
 	for(i = 0 ; i< maxid; i++){
 		graph[i].pre = new vector<int>();
 		graph[i].post = new vector<int>();
@@ -53,10 +47,7 @@ Grail::Grail(Graph& graph, int Dim, int labelingType, bool pool, int poolsize): 
 		visited[i]=-1;
 	}
 	cout << "Graph Size = " << maxid << endl;
-	if(!POOL){
-		POOLSIZE = dim;
-	}
-	for(i=0;i<POOLSIZE;i++){
+	for(i=0;i<dim;i++){
 		switch(labelingType){
 			case 0 : Grail::randomlabeling(graph);
 							 break;
@@ -65,11 +56,6 @@ Grail::Grail(Graph& graph, int Dim, int labelingType, bool pool, int poolsize): 
 							 break;
 		}
 		cout << "Labeling " << i << " is completed" << endl;
-/*		for( int k = 0 ; k < maxid; k++){
-			cout << k << "["<<(graph[k].pre)->at(i) << ","<<(graph[k].post)->at(i) << "] ";
-		}
-		cout << endl;
-*/
 	}
 	PositiveCut = NegativeCut = TotalCall = TotalDepth = CurrentDepth = 0;
 }
@@ -78,6 +64,9 @@ Grail::~Grail() {
 }
 
 
+/******************************************************************
+ * Labeling Functions
+ ****************************************************************/
 void Grail::setIndex(Graph& g, int traversal){
 	if(traversal==0){
 		int cnt = g.num_vertices();
@@ -180,21 +169,13 @@ int Grail::fixedreversevisit(Graph& tree, int vid, int& pre_post, vector<bool>& 
 /*************************************************************************************
 GRAIL Query Functions
 *************************************************************************************/
+/*
+ * This function checks that src node is contained by trg node by checking for each
+ * the exception
+ */
 bool Grail::contains(int src,int trg){
 	int i,j;
-	if(POOL){
-		for(i=0;i<dim;i++){
-			j = rand()%POOLSIZE;
-			if(g[src].pre->at(j) > g[trg].pre->at(j)) {
-				return false;
-			}
-			if(g[src].post->at(j) < g[trg].post->at(j)){
-				return false;
-			}
-		}
-	}
-	else{
-		for(i=0;i<dim;i++){
+	for(i=0;i<dim;i++){
 			if(g[src].pre->at(i) > g[trg].pre->at(i)) {
 				return false;
 			}
@@ -202,17 +183,35 @@ bool Grail::contains(int src,int trg){
 				return false;
 			}
 		}
-	}
 	return true;
 }
 
+bool Grail::reach(int src,int trg){
+	/*
+	 * Check Trivial Case first
+	 */
+	if(src == trg){
+		return true;
+	}
+
+	if(!contains(src,trg))						// if it does not contain reject
+		return false;
+
+	visited[src]=++QueryCnt;
+	return go_for_reach(src,trg);			//search for reachability
+}
+
+/*
+ * This function traverses the tree until it finds the trg label
+ * or returns false
+ */
 bool Grail::go_for_reach(int src, int trg) {
 	if(src==trg)
 		return true;
 			
 	visited[src] = QueryCnt;
 	EdgeList el = g.out_edges(src);
-   EdgeList::iterator eit;   
+	EdgeList::iterator eit;
 
 	for (eit = el.begin(); eit != el.end(); eit++) {
 		if(visited[*eit]!=QueryCnt && contains(*eit,trg)){
@@ -274,14 +273,3 @@ bool Grail::bidirectionalReach(int src,int trg){
 	return false;
 }
 
-bool Grail::reach(int src,int trg){
-	if(src == trg){
-		return true;
-	}
-
-	if(!contains(src,trg))						// if it does not contain reject
-		return false;
-
-	visited[src]=++QueryCnt;
-	return go_for_reach(src,trg);
-}

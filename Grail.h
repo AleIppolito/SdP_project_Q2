@@ -20,12 +20,10 @@ class Grail {
 		int dim;
 		int *visited;
 		int QueryCnt;
-		bool POOL;
-		int POOLSIZE;
 		unsigned int PositiveCut, NegativeCut, TotalCall, TotalDepth, CurrentDepth;
 	public:
 		Grail(Graph& graph, int dim);
-		Grail(Graph& graph, int dim, int labelingType, bool POOL, int POOLSIZE);
+		Grail(Graph& graph, int dim, int labelingType);
 		~Grail();
 		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited);
 		static int fixedreversevisit(Graph& tree, int vid, int& pre_post, vector<bool>& visited,int traversal);
