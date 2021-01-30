@@ -13,12 +13,7 @@ or their institutions liable under any circumstances.
 class GraphUtil {
 	public:
 	static void dfs(Graph& g, int vid, vector<int>& preorder, vector<int>& postorder, vector<bool>& visited);
-		static void topo_leveler(Graph& g);
-		static int topo_level(Graph& g, int vid);
 		static void topological_sort(Graph g, vector<int>& ts);
-		static void tarjan(Graph& g, int vid, int& index, hash_map< int, pair<int,int> >& order, vector<int>& sn, 
-			multimap<int, int>& sccmap, int& scc);
-		static void mergeSCC(Graph& g, int* on, vector<int>& ts);
 		static void traverse(Graph& tree, int vid, int& pre_post, vector<bool>& visited);
 		static void pre_post_labeling(Graph& tree);
 

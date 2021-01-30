@@ -99,8 +99,6 @@ class Graph {
 		bool hasEdge(int, int);	
 		Graph& operator=(const Graph&);
 		Vertex& operator[](const int);
-		const double actualgap(const int);
-		const double tcs(const int);
 		
 		void clear();
 		void strTrimRight(string& str);

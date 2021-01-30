@@ -17,11 +17,9 @@ or their institutions liable under any circumstances.
 #include "utils.h"
 
 
-bool SKIPSCC = true; // graph will always be a DAG
 bool BIDIRECTIONAL = false;
 int LABELINGTYPE = 0;
 int DIM = 2;
-int query_num = 100000;
 char* filename = NULL;
 char* testfilename = NULL;
 bool debug = false;
@@ -44,7 +42,7 @@ void handle(int sig) {
 
 static void usage() {
 	cout << "\nUsage:\n"
-		" grail [-h] <filename> -test <testfilename> [-dim <DIM>] [-ltype <labelingtype>] [-t <alg_type>]\n"
+		" grail [-h] <filename> [<DIM>  <testfilename> \n"
 		"Description:\n"
 		"	-h			Print the help message.\n"
 		"  <filename> is the name of the input graph in gra format.\n"
@@ -61,14 +59,16 @@ static void usage() {
 
 
 static void parse_args(int argc, char *argv[]){
-	if (argc == 1) {
+	if (argc < 4) {
 		usage();
 		exit(0);
 	}
-
  	int i = 1;
-
-	while (i < argc) {
+ 	filename = argv[1];
+ 	DIM = atoi(argv[2]);
+ 	testfilename = argv[3];
+	/*
+ 	while (i < argc) {
 		if (strcmp("-h", argv[i]) == 0) {
 			usage();
 			exit(0);
@@ -96,7 +96,7 @@ static void parse_args(int argc, char *argv[]){
 	if(!testfilename){
 		cout << "Please provide a test file : -test <testfilename> " << endl;
 		exit(0);
-	}
+	}*/
 }
 
 
@@ -114,16 +114,23 @@ int main(int argc, char* argv[]) {
 		cout << "Error: Cannot open " << filename << endl;
 		return -1;
 	}
-	
+
+	struct timeval after_time, before_time, after_timepart;
+	gettimeofday(&before_time, NULL);
 	Graph g(infile);
 	cout << "#vertex size:" << g.num_vertices() << "\t#edges size:" << g.num_edges() << endl;
+	gettimeofday(&after_time, NULL);
 
+		labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
+			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
+		cout << "#graph read time:" << labeling_time << " (ms)" << endl;
+
+	g.printGraph();
 	int s, t;
 	int left = 0;
 	int gsize = g.num_vertices();
 	
 	bool r;
-	struct timeval after_time, before_time, after_timepart, before_timepart;
 
 
 
@@ -137,21 +144,21 @@ int main(int argc, char* argv[]) {
 	vector<char>::iterator lit;
 	int success=0,fail=0;
 	int label;
-      std::ifstream fstr(testfilename);
-		while(fstr >> s >> t >> label) {
-			src.push_back(s);
-			trg.push_back(t);
-			labels.push_back(label);
-		}
+
+	std::ifstream fstr(testfilename);
+	while(fstr >> s >> t >> label) {
+		src.push_back(s);
+		trg.push_back(t);
+		labels.push_back(label);
+	}
 
 	cout << "queries are ready" << endl;
-
-
-	gettimeofday(&before_time, NULL);
 
 	/**************
 	 * Labeling happens here
 	 */
+	gettimeofday(&before_time, NULL);
+
 	Grail grail(g,DIM,LABELINGTYPE);
 
 	gettimeofday(&after_time, NULL);
@@ -167,8 +174,6 @@ int main(int argc, char* argv[]) {
 	 */
 	cout << "process queries..." << endl;
 	gettimeofday(&before_time, NULL);
-	gettimeofday(&before_timepart, NULL);
-	int seenpositive = 0;
 
 	int source, target;
 	int reachable = 0, nonreachable =0;
@@ -203,6 +208,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
+
 	cout << "Success Rate " << success << "/" << success+fail << endl;
 
 	gettimeofday(&after_time, NULL);
@@ -223,11 +229,7 @@ int main(int argc, char* argv[]) {
 		case 2: alg_name= "GRAILBI";  break;
 	}
 
-	if(grail.PositiveCut==0)
-		grail.PositiveCut = 1;	
-	
-	int totalIndexSize=gsize*DIM*2;
 	
 	
-	cout << "COMPAR: " << alg_name << DIM << "\t" << labeling_time << "\t" << query_time << "\t" <<  totalIndexSize << "\t" << print_mem_usage()  << "\t" << grail.TotalCall << "\t" << grail.PositiveCut << "\t" << grail.NegativeCut << "\t" << reachable << "\t AvgCut:" << (grail.TotalDepth/grail.PositiveCut) << endl;
+	cout << "COMPAR: " << alg_name << DIM << "\t" << labeling_time << "\t" << query_time << "\t" << "\t" << print_mem_usage() << "\t" << grail.TotalCall << "\t" << reachable << endl;
 }

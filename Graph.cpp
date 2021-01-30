@@ -71,16 +71,10 @@ void Graph::strTrimRight(string& str) {
 
 void Graph::readGraph(istream& in) {
 	string buf;
-	getline(in, buf);
-
-	strTrimRight(buf);
-	if (buf != "graph_for_greach") {
-		cout << "BAD FILE FORMAT!" << endl;
-		exit(0);
-	}
 	
 	int n;
 	getline(in, buf);
+
 	istringstream(buf) >> n;
 	// initialize
 	vsize = n;
@@ -93,25 +87,25 @@ void Graph::readGraph(istream& in) {
 	string sub;
 	int idx;
 	int sid = 0;
-	int tid = 0;
+	int tid=0;
 	while (getline(in, buf)) {
-		strTrimRight(buf);
-		idx = buf.find(":");
-		buf.erase(0, idx+2);
-		while (buf.find(" ") != string::npos) {
-			sub = buf.substr(0, buf.find(" "));
-			istringstream(sub) >> tid;
-			buf.erase(0, buf.find(" ")+1);
-			if(sid == tid) 
-				cout << "Self-edge " << sid << endl;
-			if(tid < 0 || tid > n)
-				cout << "Wrong tid " << tid << endl;
+			strTrimRight(buf);
+			idx = buf.find(":");
+			buf.erase(0, idx+2);
+			while (buf.find(" ") != string::npos) {
+				sub = buf.substr(0, buf.find(" "));
+				istringstream(sub) >> tid;
+				buf.erase(0, buf.find(" ")+1);
+				if(sid == tid)
+					cout << "Self-edge " << sid << endl;
+				if(tid < 0 || tid > n)
+					cout << "Wrong tid " << tid << endl;
 
-			addEdge(sid, tid);
+				addEdge(sid, tid);
+			}
+			++sid;
 		}
-		++sid;
 	}
-}	
 
 void Graph::writeGraph(ostream& out) {
 	cout << "Graph size = " << graph.size() << endl;
@@ -130,16 +124,6 @@ void Graph::writeGraph(ostream& out) {
 			out << (*eit) << " ";
 		out << "#" << endl;
 	}
-/*
-	cout << "** In List for graph **" << endl;
-	for (i = 0; i < vl.size(); i++) {
-		out << i << ": ";
-		el = graph[i].inList;
-		for (eit = el.begin(); eit != el.end(); eit++)
-			out << (*eit) << " ";
-		out << "#" << endl;
-	}
-*/
 }
 
 void Graph::addVertex(int vid) {
@@ -252,14 +236,7 @@ Vertex& Graph::operator[](const int vid) {
 	return vl[vid];
 }
 
-const double Graph::actualgap(const int vid){
-		return vl[vid].mingap;
-//	return vl[vid].mingap - vl[vid].tcs;
-}
 
-const double Graph::tcs(const int vid){
-	return vl[vid].tcs;
-}
 Graph::Graph(hash_map<int,vector<int> >& inlist, hash_map<int,vector<int> >& outlist) {
 	vsize = inlist.size();
 	vl = VertexList(vsize);
@@ -290,27 +267,4 @@ void Graph::extract(hash_map<int,vector<int> >& inlist, hash_map<int,vector<int>
 		outlist[i] = graph[i].outList;
 	}
 //	printMap(inlist,outlist);
-}
-
-// for test
-void Graph::printMap(hash_map<int,vector<int> >& inlist, hash_map<int,vector<int> >& outlist) {
-	cout << "==============================================" << endl;
-	hash_map<int, vector<int> >::iterator hit;
-	vector<int>::iterator vit;
-	for (hit = outlist.begin(); hit != outlist.end(); hit++) {
-		cout << hit->first << ": ";
-		vector<int> vec = hit->second;
-		for (vit = vec.begin(); vit != vec.end(); vit++)
-			cout << *vit << " ";
-		cout << "#" << endl;
-	}
-	cout << "In List for graph" << endl;
-	for (hit = inlist.begin(); hit != inlist.end(); hit++) {
-		cout << hit->first << ": ";
-		vector<int> vec = hit->second;
-		for (vit = vec.begin(); vit != vec.end(); vit++)
-			cout << *vit << " ";
-		cout << "#" << endl;
-	}
-	cout << "================================================" << endl;
 }
