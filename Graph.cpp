@@ -85,7 +85,7 @@ void Graph::readGraph(istream& in) {
 	int sid = 0;
 	int tid=0;
 	char hash;
-	while (in >> tid >> hash) {
+	while (in >> sid >> hash) {
 		in >> std::ws;
 				while (in.peek() != '#' && in >> tid >> std::ws) {
 					if(sid == tid)
@@ -95,7 +95,6 @@ void Graph::readGraph(istream& in) {
 
 					addEdge(sid, tid);
 				}
-				++sid;
 				in.ignore();
 			}
 		}

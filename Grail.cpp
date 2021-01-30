@@ -5,6 +5,8 @@ There is no additional support offered, nor are the author(s)
 or their institutions liable under any circumstances.
 */
 #include "Grail.h"
+#include <thread>
+#include <string>
 //#include "TCSEstimator.h"
 #include <queue>
 
@@ -36,27 +38,28 @@ GRAIL LABELING :
 		7- visit - used by random labeling
 *******************************************************************************************/
 
-Grail::Grail(Graph& graph, int Dim, int labelingType): g(graph),dim(Dim) {
+Grail::Grail(Graph& graph, int Dim): g(graph),dim(Dim) {
 	int i,maxid = g.num_vertices();
 	visited = new int[maxid];
 	QueryCnt = 0;
 	for(i = 0 ; i< maxid; i++){
-		graph[i].pre = new vector<int>();
-		graph[i].post = new vector<int>();
-		graph[i].middle = new vector<int>();
+		//TODO destroy element after grail program
+		graph[i].pre = new vector<int>(dim);
+		graph[i].post = new vector<int>(dim);
+		graph[i].middle = new vector<int>(dim);
 		visited[i]=-1;
 	}
 	cout << "Graph Size = " << maxid << endl;
+	vector<std::thread> threadPool;
+	//int maxThread = thread::hardware_concurrency();
 	for(i=0;i<dim;i++){
-		switch(labelingType){
-			case 0 : Grail::randomlabeling(graph);
-							 break;
-			case 1 : Grail::setIndex(graph,i);
-							 Grail::fixedreverselabeling(graph,i);
-							 break;
-		}
+		threadPool.push_back(thread(&randomlabeling,ref(graph),ref(i)));
+		//randomlabeling(graph,i);
 		cout << "Labeling " << i << " is completed" << endl;
 	}
+	for(i=0;i<dim;i++){
+			threadPool.at(i).join();
+		}
 	PositiveCut = NegativeCut = TotalCall = TotalDepth = CurrentDepth = 0;
 }
 
@@ -67,103 +70,55 @@ Grail::~Grail() {
 /******************************************************************
  * Labeling Functions
  ****************************************************************/
-void Grail::setIndex(Graph& g, int traversal){
-	if(traversal==0){
-		int cnt = g.num_vertices();
-		for(int i=0; i<cnt; i++){
-			_index.push_back(i);
+
+
+// compute interval label for each node of tree (pre_order, post_order)
+void Grail::randomlabeling(Graph& tree, int labelid) {
+
+	vector<int> roots = tree.getRoots();
+	vector<int>::iterator sit;
+	int pre_post = 0;
+	vector<bool> visited(tree.num_vertices(), false);
+	//random_shuffle(roots.begin(),roots.end());
+	for (sit = roots.begin(); sit != roots.end(); sit++) {
+		pre_post++;
+		visit(tree, *sit, pre_post, visited, labelid);
+	}
+}
+
+
+void Grail::printLabeling(Graph& tree, int i, ostream& out){
+
+	for(int j = 0; j < tree.num_vertices(); j++){
+		out <<	"Node : " << j << " Pre : " << tree[j].pre->at(i) << " Post : " <<	tree[j].post->at(i) << endl;
+
+	}
+}
+
+// traverse tree to label node with pre and post order by giving a start node
+int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int labelid) {
+//	cout << "entering " << vid << endl;
+	visited[vid] = true;
+	EdgeList el = tree.out_edges(vid);
+	//random_shuffle(el.begin(),el.end());
+	EdgeList::iterator eit;
+	int pre_order = tree.num_vertices()+1;
+	tree[vid].middle->push_back(pre_post);
+	for (eit = el.begin(); eit != el.end(); eit++) {
+		if (!visited[*eit]){
+			pre_order=min(pre_order,visit(tree, *eit, pre_post, visited, labelid));
+		}else{
+			pre_order=min(pre_order,tree[*eit].pre->at(labelid));
+			//This preorder check assumes that the last label added to the pre vector
+			//happened during current traversal
 		}
-	}else if(traversal%2==0){
-		random_shuffle(_index.begin(),_index.end());
-	}	
-}
-
-
-// compute interval label for each node of tree (pre_order, post_order)
-void Grail::fixedreverselabeling(Graph& tree, int traversal) {
-	vector<int> roots = tree.getRoots();
-	vector<int>::iterator sit;
-	int pre_post = 0;
-	vector<bool> visited(tree.num_vertices(), false);
-	sort(roots.begin(),roots.end(),index_cmp<vector<int>&>(_index));
-	if(traversal %2 )
-		reverse(roots.begin(),roots.end());
-		
-	for (sit = roots.begin(); sit != roots.end(); sit++) {
-		pre_post++;
-		fixedreversevisit(tree, *sit, pre_post, visited, traversal);
 	}
-}
-
-
-// compute interval label for each node of tree (pre_order, post_order)
-void Grail::randomlabeling(Graph& tree) {
-	vector<int> roots = tree.getRoots();
-	vector<int>::iterator sit;
-	int pre_post = 0;
-	vector<bool> visited(tree.num_vertices(), false);
-	random_shuffle(roots.begin(),roots.end());	
-	for (sit = roots.begin(); sit != roots.end(); sit++) {
-		pre_post++;
-		visit(tree, *sit, pre_post, visited);
-	}
-}
-
-// traverse tree to label node with pre and post order by giving a start node
-int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited) {
-//	cout << "entering " << vid << endl;
-	visited[vid] = true;
-	EdgeList el = tree.out_edges(vid);
-	random_shuffle(el.begin(),el.end());
-	EdgeList::iterator eit;
-	int pre_order = tree.num_vertices()+1;
-	tree[vid].middle->push_back(pre_post);
-	for (eit = el.begin(); eit != el.end(); eit++) {
-		if (!visited[*eit]){
-			pre_order=min(pre_order,visit(tree, *eit, pre_post, visited));
-		}else
-			pre_order=min(pre_order,tree[*eit].pre->back());
-			//pre_order=min(pre_order,tree[*eit].pre->at(tree[*eit].pre->size()-1));
-	}
-	
 	pre_order=min(pre_order,pre_post);
-	tree[vid].pre->push_back(pre_order);
-	tree[vid].post->push_back(pre_post);
+	tree[vid].pre->at(labelid)=pre_order;
+	tree[vid].post->at(labelid)=pre_post;
 	pre_post++;
 	return pre_order;
 }
-
-// traverse tree to label node with pre and post order by giving a start node
-int Grail::fixedreversevisit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int traversal) {
-//	cout << "entering " << vid << endl;
-	visited[vid] = true;
-	EdgeList el = tree.out_edges(vid);
-	sort(el.begin(),el.end(),index_cmp<vector<int>&>(_index));	
-	if(traversal %2 )
-		reverse(el.begin(),el.end());
-	EdgeList::iterator eit;
-	int pre_order = tree.num_vertices()+1;
-	tree[vid].middle->push_back(pre_post);
-	for (eit = el.begin(); eit != el.end(); eit++) {
-		if (!visited[*eit]){
-			pre_order=min(pre_order,fixedreversevisit(tree, *eit, pre_post, visited,traversal));
-		}else
-			pre_order=min(pre_order,tree[*eit].pre->back());
-			//pre_order=min(pre_order,tree[*eit].pre->at(tree[*eit].pre->size()-1));
-	}
-	
-	pre_order=min(pre_order,pre_post);
-	tree[vid].pre->push_back(pre_order);
-	tree[vid].post->push_back(pre_post);
-	pre_post++;
-//	cout << "exiting " << vid << endl;
-	return pre_order;
-}
-
-
-
-
-
 
 
 /*************************************************************************************
@@ -198,7 +153,7 @@ bool Grail::reach(int src,int trg){
 		return false;
 
 	visited[src]=++QueryCnt;
-	return go_for_reach(src,trg);			//search for reachability
+	return go_for_reach(src,trg);			//search for reachability in children
 }
 
 /*

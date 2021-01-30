@@ -88,8 +88,9 @@ int main(int argc, char* argv[]) {
 		labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
 			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 		cout << "#graph read time:" << labeling_time << " (ms)" << endl;
-
-	//g.printGraph();
+	/*
+	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
+	g.writeGraph(outfile);*/
 	int s, t;
 	int left = 0;
 	int gsize = g.num_vertices();
@@ -122,7 +123,7 @@ int main(int argc, char* argv[]) {
 	 */
 	gettimeofday(&before_time, NULL);
 
-	Grail grail(g,DIM,LABELINGTYPE);
+	Grail grail(g,DIM);
 
 	gettimeofday(&after_time, NULL);
 

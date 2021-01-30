@@ -8,7 +8,6 @@ or their institutions liable under any circumstances.
 #define _BOX_H
 
 #include "GraphUtil.h"
-
 // test switch
 #define _TEST_
 
@@ -23,15 +22,11 @@ class Grail {
 		unsigned int PositiveCut, NegativeCut, TotalCall, TotalDepth, CurrentDepth;
 	public:
 		Grail(Graph& graph, int dim);
-		Grail(Graph& graph, int dim, int labelingType);
 		~Grail();
-		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited);
-		static int fixedreversevisit(Graph& tree, int vid, int& pre_post, vector<bool>& visited,int traversal);
-		static void randomlabeling(Graph& tree);
-		static void fixedreverselabeling(Graph& tree, int traversal);
-		static void setIndex(Graph& tree, int traversal); 
+		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int labelid);
+		static void randomlabeling(Graph& tree, int labelid);
 
-
+		void printLabeling(Graph& tree, int i, ostream& out);
 		bool reach(int src, int trg);
 		bool bidirectionalReach(int src, int trg);
 		bool go_for_reach(int src, int trg);
