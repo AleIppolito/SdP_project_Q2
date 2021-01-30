@@ -73,9 +73,7 @@ void Graph::readGraph(istream& in) {
 	string buf;
 	
 	int n;
-	getline(in, buf);
-
-	istringstream(buf) >> n;
+	in >> n;
 	// initialize
 	vsize = n;
 	vl = VertexList(n);
@@ -84,28 +82,23 @@ void Graph::readGraph(istream& in) {
 	for (int i = 0; i < n; i++)
 		addVertex(i);
 
-	string sub;
-	int idx;
 	int sid = 0;
 	int tid=0;
-	while (getline(in, buf)) {
-			strTrimRight(buf);
-			idx = buf.find(":");
-			buf.erase(0, idx+2);
-			while (buf.find(" ") != string::npos) {
-				sub = buf.substr(0, buf.find(" "));
-				istringstream(sub) >> tid;
-				buf.erase(0, buf.find(" ")+1);
-				if(sid == tid)
-					cout << "Self-edge " << sid << endl;
-				if(tid < 0 || tid > n)
-					cout << "Wrong tid " << tid << endl;
+	char hash;
+	while (in >> tid >> hash) {
+		in >> std::ws;
+				while (in.peek() != '#' && in >> tid >> std::ws) {
+					if(sid == tid)
+						cout << "Self-edge " << sid << endl;
+					if(tid < 0 || tid > n)
+						cout << "Wrong tid " << tid << endl;
 
-				addEdge(sid, tid);
+					addEdge(sid, tid);
+				}
+				++sid;
+				in.ignore();
 			}
-			++sid;
 		}
-	}
 
 void Graph::writeGraph(ostream& out) {
 	cout << "Graph size = " << graph.size() << endl;

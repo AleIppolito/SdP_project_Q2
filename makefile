@@ -1,7 +1,7 @@
 CC	= g++
 CPPFLAGS= -Wno-deprecated -O3 -c -g -ggdb
 LDFLAGS	= -O3 
-SOURCES	= main.cpp Graph.cpp GraphUtil.cpp Grail.cpp TCSEstimator.cpp 
+SOURCES	= main.cpp Graph.cpp GraphUtil.cpp Grail.cpp 
 OBJECTS	= $(SOURCES:.cpp=.o) interval_tree.o
 EXECUTABLE=grail
 

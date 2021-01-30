@@ -44,16 +44,9 @@ static void usage() {
 	cout << "\nUsage:\n"
 		" grail [-h] <filename> [<DIM>  <testfilename> \n"
 		"Description:\n"
-		"	-h			Print the help message.\n"
-		"  <filename> is the name of the input graph in gra format.\n"
-		"	-test		Set the queryfile which contains a line of <source> <target> <reachability> for each query. \n"
-		"	-dim 		Set the number of traversals to be performed. The default value is 5.\n"
-		"	-t <alg_type>		alg_type can take 2 different values.  Default value is 1.\n"
-		" \t\t\t 1  : Basic Search (used in the original VLDB'10 paper) \n"
-		" \t\t\t 2  : Bidirectional Search \n"
-		"	-ltype <labeling_type>		labeling_type can take 2 different values.  Default value is 0.\n"
-		" \t\t\t 0  : Completely randomized traversals.  \n"
-		" \t\t\t 1  : Randomized Reverse Pairs Traversals (usually provides the best quality) \n"
+		"<filename> <dim>(int) < testfilename>"
+		"This program receives a file containin a DAG and creates dim labels\n"
+		"which are then queried using the queries found on <testfilename>\n"
 		<< endl;
 }
 
@@ -67,36 +60,6 @@ static void parse_args(int argc, char *argv[]){
  	filename = argv[1];
  	DIM = atoi(argv[2]);
  	testfilename = argv[3];
-	/*
- 	while (i < argc) {
-		if (strcmp("-h", argv[i]) == 0) {
-			usage();
-			exit(0);
-		}
-		else if (strcmp("-dim", argv[i]) == 0) {
-			i++;
-			DIM = atoi(argv[i++]);
-		}else if (strcmp("-test", argv[i]) == 0) {
-			i++;
-			testfilename = argv[i++];
-		}else if(strcmp("-ltype", argv[i])== 0) {
-			i++;
-			LABELINGTYPE = atoi(argv[i++]);
-		}else if(strcmp("-t", argv[i])== 0) {
-			i++;
-			alg_type = atoi(argv[i++]);
-		}else if(strcmp("-bi", argv[i])== 0) {
-			i++;
-			BIDIRECTIONAL = true;
-			alg_type *=3;
-		}else {
-			filename = argv[i++];
-		}
-	}
-	if(!testfilename){
-		cout << "Please provide a test file : -test <testfilename> " << endl;
-		exit(0);
-	}*/
 }
 
 
@@ -115,6 +78,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+	srand48(time(NULL));
 	struct timeval after_time, before_time, after_timepart;
 	gettimeofday(&before_time, NULL);
 	Graph g(infile);
@@ -125,7 +89,7 @@ int main(int argc, char* argv[]) {
 			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 		cout << "#graph read time:" << labeling_time << " (ms)" << endl;
 
-	g.printGraph();
+	//g.printGraph();
 	int s, t;
 	int left = 0;
 	int gsize = g.num_vertices();
@@ -135,7 +99,6 @@ int main(int argc, char* argv[]) {
 
 
 	// prepare queries
-	srand48(time(NULL));
 	cout << "preparing queries..." << endl;
 	vector<int> src;
 	vector<int> trg;
