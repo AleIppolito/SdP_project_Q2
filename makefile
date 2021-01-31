@@ -1,6 +1,6 @@
 CC	= g++
-CPPFLAGS= -Wno-deprecated -O3 -c -g -ggdb 
-LDFLAGS	= -O3 -lpthread -pthread
+CPPFLAGS= -Wno-deprecated -c -O3 -pthread 
+LDFLAGS	= -O3  -pthread
 SOURCES	= main.cpp Graph.cpp GraphUtil.cpp Grail.cpp 
 OBJECTS	= $(SOURCES:.cpp=.o) interval_tree.o
 EXECUTABLE=grail
@@ -13,8 +13,6 @@ $(EXECUTABLE) : $(OBJECTS)
 .cpp.o : 
 	$(CC) $(CPPFLAGS) $< -o $@
 
-interval_tree.o : interval_tree.c interval_tree.h templatestack.h
-	g++ -c interval_tree.c 
 
 clean:
 	-rm -f *.o grail

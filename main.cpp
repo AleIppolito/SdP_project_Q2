@@ -14,6 +14,7 @@ or their institutions liable under any circumstances.
 #include <csignal>
 #include <cstring>
 
+#include <thread>
 #include "utils.h"
 
 
@@ -23,9 +24,15 @@ int DIM = 2;
 char* filename = NULL;
 char* testfilename = NULL;
 bool debug = false;
-
+bool isquer =true;
 float labeling_time, query_time, query_timepart;
 int alg_type = 1;
+
+struct query{
+	int src;
+	int trg;
+	int labels;
+};
 
 void handle(int sig) {
  	char const *alg_name;
@@ -63,6 +70,27 @@ static void parse_args(int argc, char *argv[]){
 }
 
 
+void read_test(	std::vector<query>& q  ) {
+
+	int s,t,label=0;
+	std::ifstream fstr(testfilename);
+	if(isquer){
+		while(fstr >> s >> t) {
+			q.push_back({s,t,label});
+			}
+	}else {
+		while(fstr >> s >> t >> label) {
+			q.push_back({s,t,label});
+			}
+		}
+
+}
+void print_test(std::vector<query> queries){
+	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
+	for (auto &q : queries) {
+		outfile <<  q.src << " " << q.trg << endl;
+	}
+}
 
 
 int main(int argc, char* argv[]) {
@@ -81,6 +109,7 @@ int main(int argc, char* argv[]) {
 	srand48(time(NULL));
 	struct timeval after_time, before_time, after_timepart;
 	gettimeofday(&before_time, NULL);
+	//Run a thread to read
 	Graph g(infile);
 	cout << "#vertex size:" << g.num_vertices() << "\t#edges size:" << g.num_edges() << endl;
 	gettimeofday(&after_time, NULL);
@@ -91,8 +120,7 @@ int main(int argc, char* argv[]) {
 	/*
 	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
 	g.writeGraph(outfile);*/
-	int s, t;
-	int left = 0;
+
 	int gsize = g.num_vertices();
 	
 	bool r;
@@ -101,21 +129,15 @@ int main(int argc, char* argv[]) {
 
 	// prepare queries
 	cout << "preparing queries..." << endl;
-	vector<int> src;
-	vector<int> trg;
-	vector<char> labels;
-	vector<int>::iterator sit, tit;
-	vector<char>::iterator lit;
-	int success=0,fail=0;
-	int label;
+	std::vector<query> queries;
 
-	std::ifstream fstr(testfilename);
-	while(fstr >> s >> t >> label) {
-		src.push_back(s);
-		trg.push_back(t);
-		labels.push_back(label);
-	}
-
+	/*
+	 * Thread reads testfile
+	 * TODO parallel read of infile and testfile
+	 */
+	std::thread testfileThread(&read_test, std::ref(queries));
+	testfileThread.join();
+	//print_test(queries);
 	cout << "queries are ready" << endl;
 
 	/**************
@@ -127,10 +149,10 @@ int main(int argc, char* argv[]) {
 
 	gettimeofday(&after_time, NULL);
 
-	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 + 
+	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
 		(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 	cout << "#construction time:" << labeling_time << " (ms)" << endl;
-	
+
 
 
 	/**************
@@ -141,34 +163,36 @@ int main(int argc, char* argv[]) {
 
 	int source, target;
 	int reachable = 0, nonreachable =0;
-		
-	for (sit = src.begin(), tit = trg.begin(), lit = labels.begin();sit != src.end(); ++sit, ++tit, ++lit) {
+	std::vector<query>::iterator q;
+	int success=0,fail=0;
 
-			s = *sit;
-			t = *tit;
-
+	for (auto &q : queries) {
 
 		switch(alg_type){
-			case 1: r = grail.reach(s,t); break;
-			case 2: r = grail.bidirectionalReach(s,t); break;
+			case 1: r = grail.reach(q.src,q.trg); break;
+			case 2: r = grail.bidirectionalReach(q.src,q.trg); break;
 		}
-
-		if(r==true) {
-			reachable++;
-			if(*lit == '0') {
-				cout << "False positive pair = " << s << " " << t << " " << *lit << endl;
-				cout << "Levels : " << s << "->" << g[s].top_level << " " << t << "->" << g[t].top_level << endl;
-				fail++;
+		if(isquer){
+			(r==true) ? reachable++ : nonreachable++;
+		}
+		else{
+			if(r==true) {
+				reachable++;
+				if(q.labels == 0) {
+					cout << "False positive pair = " << q.src << " " << q.trg << " " << q.labels << endl;
+					cout << "Levels : " << q.src  << "->" << g[q.src ].top_level << " " << q.trg << "->" << g[q.trg].top_level << endl;
+					fail++;
+				} else {
+					success++;
+				}
 			} else {
-				success++;
-			}
-		} else {
-			nonreachable++;
-			if(*lit == '1') {
-				cout << "False negative pair = " << s << " " << t << " " << *lit << endl;
-				fail++;
-			} else {
-				success++;
+				nonreachable++;
+				if(q.labels == 1) {
+					cout << "False negative pair = " << q.src  << " " << q.trg << " " << q.labels << endl;
+					fail++;
+				} else {
+					success++;
+				}
 			}
 		}
 	}

@@ -9,7 +9,8 @@ or their institutions liable under any circumstances.
 #include <string>
 //#include "TCSEstimator.h"
 #include <queue>
-
+#include <unistd.h>
+#include <mutex>
 vector<int> _index;
 vector<double> customIndex;
 
@@ -44,22 +45,26 @@ Grail::Grail(Graph& graph, int Dim): g(graph),dim(Dim) {
 	QueryCnt = 0;
 	for(i = 0 ; i< maxid; i++){
 		//TODO destroy element after grail program
-		graph[i].pre = new vector<int>(dim);
-		graph[i].post = new vector<int>(dim);
-		graph[i].middle = new vector<int>(dim);
+		graph[i].pre = new std::vector<int>(dim);
+		graph[i].post = new std::vector<int>(dim);
+		graph[i].middle = new std::vector<int>(dim);
 		visited[i]=-1;
 	}
 	cout << "Graph Size = " << maxid << endl;
-	vector<std::thread> threadPool;
+	std::vector<std::thread> threadPool;
 	//int maxThread = thread::hardware_concurrency();
 	for(i=0;i<dim;i++){
-		threadPool.push_back(thread(&randomlabeling,ref(graph),ref(i)));
+		threadPool.emplace_back(std::thread(&randomlabeling,std::ref(graph),i));
 		//randomlabeling(graph,i);
+
 		cout << "Labeling " << i << " is completed" << endl;
 	}
-	for(i=0;i<dim;i++){
-			threadPool.at(i).join();
+
+	for(auto &t : threadPool){
+		if(t.joinable()) {
+			t.join();
 		}
+	}
 	PositiveCut = NegativeCut = TotalCall = TotalDepth = CurrentDepth = 0;
 }
 
@@ -75,32 +80,25 @@ Grail::~Grail() {
 // compute interval label for each node of tree (pre_order, post_order)
 void Grail::randomlabeling(Graph& tree, int labelid) {
 
-	vector<int> roots = tree.getRoots();
-	vector<int>::iterator sit;
+	std::vector<int> roots = tree.getRoots();
+	std::vector<int>::iterator sit;
 	int pre_post = 0;
-	vector<bool> visited(tree.num_vertices(), false);
-	//random_shuffle(roots.begin(),roots.end());
+	std::vector<bool> visited(tree.num_vertices(), false);
+	random_shuffle(roots.begin(),roots.end());
 	for (sit = roots.begin(); sit != roots.end(); sit++) {
 		pre_post++;
 		visit(tree, *sit, pre_post, visited, labelid);
 	}
+
 }
 
-
-void Grail::printLabeling(Graph& tree, int i, ostream& out){
-
-	for(int j = 0; j < tree.num_vertices(); j++){
-		out <<	"Node : " << j << " Pre : " << tree[j].pre->at(i) << " Post : " <<	tree[j].post->at(i) << endl;
-
-	}
-}
 
 // traverse tree to label node with pre and post order by giving a start node
 int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int labelid) {
-//	cout << "entering " << vid << endl;
+ 	//cout << "entering " << vid << "labelid" << endl;
 	visited[vid] = true;
 	EdgeList el = tree.out_edges(vid);
-	//random_shuffle(el.begin(),el.end());
+	random_shuffle(el.begin(),el.end());
 	EdgeList::iterator eit;
 	int pre_order = tree.num_vertices()+1;
 	tree[vid].middle->push_back(pre_post);
