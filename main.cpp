@@ -13,7 +13,7 @@ or their institutions liable under any circumstances.
 #include <signal.h>
 #include <csignal>
 #include <cstring>
-
+#include <future>
 #include <thread>
 #include "utils.h"
 
@@ -69,9 +69,15 @@ static void parse_args(int argc, char *argv[]){
  	testfilename = argv[3];
 }
 
-
+/*
+ * ADDED FUNCTIONS
+ */
+/*
+ * THIS FUNCTION READ THE TEST QUERIES
+ */
 void read_test(	std::vector<query>& q  ) {
 
+	cout << "preparing queries..." << endl;
 	int s,t,label=0;
 	std::ifstream fstr(testfilename);
 	if(isquer){
@@ -83,62 +89,85 @@ void read_test(	std::vector<query>& q  ) {
 			q.push_back({s,t,label});
 			}
 		}
-
+	cout << "queries are ready" << endl;
 }
+
+/*
+ * THIS FUNCTION RETURNES AS A FUTURE THE READ GRAPH
+ */
+void read_graph( promise<Graph>& pgraph){
+	ifstream infile(filename);
+	if (!infile) {
+		cout << "Error: Cannot open " << filename << endl;
+		return ;
+	}
+	//Run a thread to read
+	Graph g(infile);
+
+	/*
+	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
+	g.writeGraph(outfile);*/
+	pgraph.set_value(g);
+}
+
 void print_test(std::vector<query> queries){
 	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
 	for (auto &q : queries) {
 		outfile <<  q.src << " " << q.trg << endl;
 	}
 }
-
-
+/*
+ * **********************************
+*/
 int main(int argc, char* argv[]) {
-	signal(SIGALRM, handle);	
+	signal(SIGALRM, handle);
 	parse_args(argc,argv);
-		
+
 	/*
-		Read Graph from the input file	
+		Read Graph from the input file AND prepare queries
 	*/
-	ifstream infile(filename);
-	if (!infile) {
-		cout << "Error: Cannot open " << filename << endl;
-		return -1;
-	}
-
 	srand48(time(NULL));
-	struct timeval after_time, before_time, after_timepart;
-	gettimeofday(&before_time, NULL);
-	//Run a thread to read
-	Graph g(infile);
-	cout << "#vertex size:" << g.num_vertices() << "\t#edges size:" << g.num_edges() << endl;
-	gettimeofday(&after_time, NULL);
+		struct timeval after_time, before_time, after_timepart;
+		gettimeofday(&before_time, NULL);
 
-		labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
-			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-		cout << "#graph read time:" << labeling_time << " (ms)" << endl;
+	std::vector<query> queries;
 	/*
-	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
-	g.writeGraph(outfile);*/
+	 * Graph reading thread returns the graph as a promise
+	 */
+	promise<Graph> pgraph;
+	future<Graph> fgraph= pgraph.get_future();
+	std::thread readGraphThread(read_graph,std::ref(pgraph));
+	std::thread testfileThread(&read_test, std::ref(queries));
 
+	testfileThread.join();
+	/*While the graph is running run a thread that reads the test file
+	 */
+
+
+	Graph g = fgraph.get();
+	readGraphThread.join();
+
+	/*
+	 * Time check evalutation
+	 */
+
+
+	gettimeofday(&after_time, NULL);
+				labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
+					(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
+				cout << "#graph read time:" << labeling_time << " (ms)" << endl;
+
+
+			ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.gra");
+		g.writeGraph(outfile);
+	print_test(queries);
+			cout << "#vertex size:" << g.num_vertices() << "\t#edges size:" << g.num_edges() << endl;
 	int gsize = g.num_vertices();
-	
+
 	bool r;
 
 
 
-	// prepare queries
-	cout << "preparing queries..." << endl;
-	std::vector<query> queries;
-
-	/*
-	 * Thread reads testfile
-	 * TODO parallel read of infile and testfile
-	 */
-	std::thread testfileThread(&read_test, std::ref(queries));
-	testfileThread.join();
-	//print_test(queries);
-	cout << "queries are ready" << endl;
 
 	/**************
 	 * Labeling happens here
