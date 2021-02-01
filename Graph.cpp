@@ -10,6 +10,7 @@ Graph::Graph() {
 	graph = GRA();
 	vl = VertexList();
 }
+
 Graph::Graph(int size) {
 	vsize = size;
 	vl = VertexList(size);
@@ -40,10 +41,18 @@ void Graph::clear() {
 
 bool Graph::contains(int src,int trg,int dim){
 	int i;
-	for(i=0;i<dim;i++){
+	for(i=0; i<dim; i++){
+#if VECTOR
 		if(vl[src].pre->at(i) > vl[trg].pre->at(i))
+#else
+		if(vl[src].pre[i] > vl[trg].pre[i])
+#endif
 			return false;
+#if VECTOR
 		if(vl[src].post->at(i) < vl[trg].post->at(i))
+#else
+		if(vl[src].post[i] < vl[trg].post[i])
+#endif
 			return false;
 	}
 	return true;
@@ -51,10 +60,18 @@ bool Graph::contains(int src,int trg,int dim){
 
 bool Graph::incrementalContains(int src,int trg,int cur){
 	int i;
-	for(i=0;i<cur;i++){
+	for(i=0; i<cur; i++){
+#if VECTOR
 		if(vl[src].pre->at(i) > vl[trg].pre->at(i))
+#else
+		if(vl[src].pre[i] > vl[trg].pre[i])
+#endif
 			return false;
+#if VECTOR
 		if(vl[src].post->at(i) < vl[trg].post->at(i))
+#else
+		if(vl[src].post[i] < vl[trg].post[i])
+#endif
 			return false;
 	}
 	return true;
@@ -79,25 +96,24 @@ void Graph::readGraph(istream& in) {
 	vl = VertexList(n);
 	graph = GRA(n, In_OutList());	
 
-	for (int i = 0; i < n; i++)
+	for (int i=0; i<n; i++)
 		addVertex(i);
 
 	int sid = 0;
-	int tid=0;
+	int tid = 0;
 	char hash;
 	while (in >> sid >> hash) {
 		in >> std::ws;
-				while (in.peek() != '#' && in >> tid >> std::ws) {
-					if(sid == tid)
-						cout << "Self-edge " << sid << endl;
-					if(tid < 0 || tid > n)
-						cout << "Wrong tid " << tid << endl;
-
-					addEdge(sid, tid);
-				}
-				in.ignore();
-			}
+		while (in.peek() != '#' && in >> tid >> std::ws) {
+			if(sid == tid)
+				cout << "Self-edge " << sid << endl;
+			if(tid < 0 || tid > n)
+				cout << "Wrong tid " << tid << endl;
+			addEdge(sid, tid);
 		}
+		in.ignore();
+	}
+}
 
 void Graph::writeGraph(ostream& out) {
 	cout << "Graph size = " << graph.size() << endl;
@@ -258,5 +274,5 @@ void Graph::extract(hash_map<int,vector<int> >& inlist, hash_map<int,vector<int>
 		inlist[i] = graph[i].inList;
 		outlist[i] = graph[i].outList;
 	}
-//	printMap(inlist,outlist);
+//	printMap(inlist, outlist);
 }

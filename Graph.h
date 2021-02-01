@@ -6,6 +6,7 @@ or their institutions liable under any circumstances.
 */
 #ifndef _GRAPH_H
 #define _GRAPH_H
+#define VECTOR true
 
 #include <iostream>
 #include <fstream>
@@ -40,9 +41,15 @@ struct Vertex {
 	int post_order;
 	double tcs;
 	int mingap;
+#if  VECTOR
 	vector<int> *pre;
 	vector<int> *post;
 	vector<int> *middle;
+#else
+	int *pre;
+	int *post;
+	int *middle;
+#endif
 	Vertex(int ID) : id(ID) {
 		top_level = -1;
 		visited = false;
@@ -54,8 +61,7 @@ struct Vertex {
 };
 
 struct VertexCompare {
-  bool operator() ( const Vertex p1, const Vertex p2 ) const
-  {
+  bool operator() (const Vertex p1, const Vertex p2) const {
     return p1.id < p2.id;
   }
 };

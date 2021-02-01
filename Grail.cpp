@@ -15,56 +15,46 @@ vector<int> _index;
 vector<double> customIndex;
 
 template<class T> struct index_cmp {
-index_cmp(const T arr) : arr(arr) {}
-bool operator()(const size_t a, const size_t b) const
-{ return arr[a] < arr[b]; }
-const T arr;
+	index_cmp(const T arr) : arr(arr) {}
+	bool operator()(const size_t a, const size_t b) const
+	{ return arr[a] < arr[b]; }
+	const T arr;
 };
 
 template<class T> struct custom_cmp {
-custom_cmp(const T arr) : arr(arr) {}
-bool operator()(const size_t a, const size_t b) const
-{ return arr[a] > arr[b]; }
-const T arr;
+	custom_cmp(const T arr) : arr(arr) {}
+	bool operator()(const size_t a, const size_t b) const
+	{ return arr[a] > arr[b]; }
+	const T arr;
 };
 
-
-/*******************************************************************************************
-GRAIL LABELING :
-		1- Constructor:
-		2- SetIndex - an auxillary function that is used by fixed reverse pairs
-		3- fixedreverselabeling - labels with fixed reverse random ordering
-		4- randomlabeling - random ordering
-		6- fixedreversevisit - used by fixedreverselabeling
-		7- visit - used by random labeling
-*******************************************************************************************/
-
-Grail::Grail(Graph& graph, int Dim): g(graph),dim(Dim) {
+Grail::Grail(Graph& graph, int Dim): g(graph), dim(Dim) {
 	int i,maxid = g.num_vertices();
 	visited = new int[maxid];
 	QueryCnt = 0;
-	for(i = 0 ; i< maxid; i++){
+	for(i = 0 ; i<maxid; i++){
 		//TODO destroy element after grail program
 		graph[i].pre = new std::vector<int>(dim);
 		graph[i].post = new std::vector<int>(dim);
 		graph[i].middle = new std::vector<int>(dim);
-		visited[i]=-1;
+		visited[i] = -1;
 	}
 	cout << "Graph Size = " << maxid << endl;
-	std::vector<std::thread> threadPool;
-	//int maxThread = thread::hardware_concurrency();
-	for(i=0;i<dim;i++){
-		threadPool.emplace_back(std::thread(&randomlabeling,std::ref(graph),i));
+	// int maxThread = thread::hardware_concurrency();
+	// int nThreads = min(dim, maxThread);
+	//if(dim > maxThread)
+	//	cout << "The requested traversal number is " << dim <<
+	//			", but max parallel traversal number is " << maxThread << endl;
+	vector<thread> threadPool;
+	for(i=0; i<dim; i++){
+		threadPool.emplace_back(thread(&randomlabeling, ref(graph), i));
 		//randomlabeling(graph,i);
-
-		cout << "Labeling " << i << " is completed" << endl;
+		cout << "Labeling " << i << " in progress" << endl;
 	}
 
-	for(auto &t : threadPool){
-		if(t.joinable()) {
-			t.join();
-		}
-	}
+	for(auto &t : threadPool)
+		t.join();
+	cout << "labelings completed" << endl;
 	PositiveCut = NegativeCut = TotalCall = TotalDepth = CurrentDepth = 0;
 }
 
@@ -104,16 +94,14 @@ int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int
 	tree[vid].middle->push_back(pre_post);
 	for (eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit]){
-			pre_order=min(pre_order,visit(tree, *eit, pre_post, visited, labelid));
-		}else{
-			pre_order=min(pre_order,tree[*eit].pre->at(labelid));
-			//This preorder check assumes that the last label added to the pre vector
-			//happened during current traversal
+			pre_order = min(pre_order, visit(tree, *eit, pre_post, visited, labelid));
+		} else {
+			pre_order = min(pre_order, tree[*eit].pre->at(labelid));
 		}
 	}
-	pre_order=min(pre_order,pre_post);
-	tree[vid].pre->at(labelid)=pre_order;
-	tree[vid].post->at(labelid)=pre_post;
+	pre_order = min(pre_order, pre_post);
+	tree[vid].pre->at(labelid) = pre_order;
+	tree[vid].post->at(labelid) = pre_post;
 	pre_post++;
 	return pre_order;
 }

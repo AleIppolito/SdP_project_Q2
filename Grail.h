@@ -12,15 +12,15 @@ or their institutions liable under any circumstances.
 #define _TEST_
 
 class Grail {
-	public:
+	private:
 		Graph& g;
 		struct timeval after_time, before_time;
 		float run_time;
 		int dim;
 		int *visited;
 		int QueryCnt;
-		unsigned int PositiveCut, NegativeCut, TotalCall, TotalDepth, CurrentDepth;
 	public:
+		unsigned int PositiveCut, NegativeCut, TotalCall, TotalDepth, CurrentDepth;
 		Grail(Graph& graph, int dim);
 		~Grail();
 		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int labelid);
