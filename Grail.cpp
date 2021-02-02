@@ -1,16 +1,14 @@
-/* Copyright (c) Hilmi Yildirim 2010,2011.
+/*
+ * Copyright (c) Hilmi Yildirim 2010,2011.
+ * Changes made on his code, available on Git
+ */
 
-The software is provided on an as is basis for research purposes.
-There is no additional support offered, nor are the author(s) 
-or their institutions liable under any circumstances.
-*/
 #include "Grail.h"
-#include <thread>
-#include <string>
+//#include <string>
+//#include <unistd.h>
+//#include <mutex>
 //#include "TCSEstimator.h"
-#include <queue>
-#include <unistd.h>
-#include <mutex>
+
 vector<int> _index;
 vector<double> customIndex;
 
@@ -28,34 +26,41 @@ template<class T> struct custom_cmp {
 	const T arr;
 };
 
-Grail::Grail(Graph& graph, int Dim): g(graph), dim(Dim) {
+Grail::Grail(Graph& graph, int Dim): g(graph), dim(Dim) { // @suppress("Class members should be properly initialized")
 	int i,maxid = g.num_vertices();
 	visited = new int[maxid];
 	QueryCnt = 0;
 	for(i = 0 ; i<maxid; i++){
+#if VECTOR
 		//TODO destroy element after grail program
 		graph[i].pre = new std::vector<int>(dim);
 		graph[i].post = new std::vector<int>(dim);
 		graph[i].middle = new std::vector<int>(dim);
+#else
+		graph[i].pre = new int[dim];
+		graph[i].post = new int[dim];
+		graph[i].middle = new int[dim];
+#endif
 		visited[i] = -1;
 	}
 	cout << "Graph Size = " << maxid << endl;
-	// int maxThread = thread::hardware_concurrency();
-	// int nThreads = min(dim, maxThread);
-	//if(dim > maxThread)
-	//	cout << "The requested traversal number is " << dim <<
-	//			", but max parallel traversal number is " << maxThread << endl;
-	vector<thread> threadPool;
+
+	int maxThread = std::thread::hardware_concurrency();
+	int nThreads = min(dim, maxThread);
+	std::vector<std::thread> threadPool;
 	for(i=0; i<dim; i++){
-		threadPool.emplace_back(thread(&randomlabeling, ref(graph), i));
-		//randomlabeling(graph,i);
+#if THREADS
+		threadPool.emplace_back(std::thread(&randomlabeling, ref(graph), i));
+#else
+		randomlabeling(graph,i);
+#endif
 		cout << "Labeling " << i << " in progress" << endl;
 	}
 
 	for(auto &t : threadPool)
 		t.join();
 	cout << "labelings completed" << endl;
-	PositiveCut = NegativeCut = TotalCall = TotalDepth = CurrentDepth = 0;
+	// PositiveCut = NegativeCut = TotalCall = TotalDepth = CurrentDepth = 0;
 }
 
 Grail::~Grail() {
@@ -165,8 +170,8 @@ bool Grail::go_for_reach(int src, int trg) {
 }
 
 bool Grail::bidirectionalReach(int src,int trg){
-	queue<int> forward;
-	queue<int> backward;
+	std::queue<int> forward;
+	std::queue<int> backward;
 	if(src == trg )
 		return true;
 
@@ -174,13 +179,29 @@ bool Grail::bidirectionalReach(int src,int trg){
 		return false;
 	
 	QueryCnt++;
+
+#if DEBUG
+
+	for(int i=0; i<visited.length(); i++)
+		cout << visited[i] << "\t";
+	cout << endl;
+
+#endif
 	visited[src] = QueryCnt;
 	forward.push(src);
 	visited[trg] = -QueryCnt;
 	backward.push(trg);
+#if DEBUG
+
+	for(int i=0; i<visited.length(); i++)
+		cout << visited[i] << "\t";
+	cout << endl;
+
+#endif
+	cout << endl;
 
 	EdgeList el;
-	vector<int>::iterator ei;
+	std::vector<int>::iterator ei;
 	int next;
 	while(!forward.empty() && !backward.empty()){
 

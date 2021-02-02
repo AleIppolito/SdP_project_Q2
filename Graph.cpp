@@ -1,14 +1,14 @@
-/* Copyright (c) Hilmi Yildirim 2010,2011.
+/*
+ * Copyright (c) Hilmi Yildirim 2010,2011.
+ * Changes made on his code, available on Git
+ */
 
-The software is provided on an as is basis for research purposes.
-There is no additional support offered, nor are the author(s) 
-or their institutions liable under any circumstances.
-*/
 #include "Graph.h"
 
 Graph::Graph() {
 	graph = GRA();
 	vl = VertexList();
+	vsize = 0;
 }
 
 Graph::Graph(int size) {
@@ -77,6 +77,7 @@ bool Graph::incrementalContains(int src,int trg,int cur){
 	return true;
 }
 
+/*
 void Graph::strTrimRight(string& str) {
 	string whitespaces(" \t\r");
 	int index = str.find_last_not_of(whitespaces);
@@ -84,7 +85,7 @@ void Graph::strTrimRight(string& str) {
 		str.erase(index+1);
 	else
 		str.clear();
-}
+}*/
 
 void Graph::readGraph(istream& in) {
 	string buf;

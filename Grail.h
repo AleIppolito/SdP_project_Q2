@@ -1,15 +1,12 @@
-/* Copyright (c) Hilmi Yildirim 2010,2011.
+/*
+ * Copyright (c) Hilmi Yildirim 2010,2011.
+ * Changes made on his code, available on Git
+ */
 
-The software is provided on an as is basis for research purposes.
-There is no additional support offered, nor are the author(s) 
-or their institutions liable under any circumstances.
-*/
 #ifndef _BOX_H
 #define _BOX_H
 
-#include "GraphUtil.h"
-// test switch
-#define _TEST_
+#include "Graph.h"
 
 class Grail {
 	private:
@@ -20,7 +17,7 @@ class Grail {
 		int *visited;
 		int QueryCnt;
 	public:
-		unsigned int PositiveCut, NegativeCut, TotalCall, TotalDepth, CurrentDepth;
+		// unsigned int PositiveCut, NegativeCut, TotalCall, TotalDepth, CurrentDepth;
 		Grail(Graph& graph, int dim);
 		~Grail();
 		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int labelid);

@@ -1,25 +1,31 @@
-/* Copyright (c) Hilmi Yildirim 2010,2011.
+/*
+ * Copyright (c) Hilmi Yildirim 2010,2011.
+ * Changes made on his code, available on Git
+ */
 
-The software is provided on an as is basis for research purposes.
-There is no additional support offered, nor are the author(s) 
-or their institutions liable under any circumstances.
-*/
 #ifndef _GRAPH_H
 #define _GRAPH_H
-#define VECTOR true
+
+#define VECTOR true // just till we decided one of the 2 options
+#define THREADS true
+#define DEBUG false
 
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <vector>
-#include <set>
-#include <map>
-#include <list>
-#include <deque>
-#include <algorithm>
-#include <utility>
-#include <cmath>
 #include <ext/hash_map>
+#include <thread>
+#include <queue>
+#include <future>
+#include <sys/time.h>
+// #include <sstream>
+// #include <set>
+// #include <map>
+// #include <list>
+// #include <deque>
+// #include <algorithm>
+// #include <utility>
+// #include <cmath>
 
 namespace std {using namespace __gnu_cxx;}
 using namespace std;
@@ -29,9 +35,9 @@ using namespace std;
 
 struct Vertex {
 	int id;
-	int top_level;	// topological level
+	int top_level;			// topological level
 	int min_parent_level;	// level of the highest parent in top_order
-	int topo_id;	// topological order
+	int topo_id;			// topological order
 	int min_int;
 	long volume;
 	double adj_vol;
@@ -42,19 +48,19 @@ struct Vertex {
 	double tcs;
 	int mingap;
 #if  VECTOR
-	vector<int> *pre;
-	vector<int> *post;
-	vector<int> *middle;
+	std::vector<int> *pre;
+	std::vector<int> *post;
+	std::vector<int> *middle;
 #else
 	int *pre;
 	int *post;
 	int *middle;
 #endif
-	Vertex(int ID) : id(ID) {
+	Vertex(int ID) : id(ID) { // @suppress("Class members should be properly initialized")
 		top_level = -1;
 		visited = false;
 	}
-	Vertex(){
+	Vertex(){ // @suppress("Class members should be properly initialized")
 		top_level = -1;
 		visited = false;
 	};
@@ -66,14 +72,15 @@ struct VertexCompare {
   }
 };
 
-typedef vector<int> EdgeList;	// edge list represented by vertex id list
-typedef vector<Vertex> VertexList;	// vertices list (store real vertex property) indexing by id
+typedef std::vector<int> EdgeList;		// edge list represented by vertex id list
+typedef std::vector<Vertex> VertexList;	// vertices list (store real vertex property) indexing by id
 
 struct In_OutList {
 	EdgeList inList;
 	EdgeList outList;
 };
-typedef vector<In_OutList> GRA;	// index graph
+
+typedef std::vector<In_OutList> GRA;	// index graph
 
 class Graph {
 	private:
@@ -101,13 +108,13 @@ class Graph {
 		EdgeList& in_edges(int);
 		int out_degree(int);
 		int in_degree(int);
-		vector<int> getRoots();
+		std::vector<int> getRoots();
 		bool hasEdge(int, int);	
 		Graph& operator=(const Graph&);
 		Vertex& operator[](const int);
 		
 		void clear();
-		void strTrimRight(string& str);
+		// void strTrimRight(string& str);
 
 		Graph(hash_map<int,vector<int> >& inlist, hash_map<int,vector<int> >& outlist);
 		void extract(hash_map<int,vector<int> >& inlist, hash_map<int,vector<int> >& outlist);

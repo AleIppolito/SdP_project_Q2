@@ -1,33 +1,25 @@
-/* Copyright (c) Hilmi Yildirim 2010,2011.
+/*
+ * Copyright (c) Hilmi Yildirim 2010,2011.
+ * Changes made on his code, available on Git
+ */
 
-The software is provided on an as is basis for research purposes.
-There is no additional support offered, nor are the author(s) 
-or their institutions liable under any circumstances.
-*/
-#include "Graph.h"
-#include "GraphUtil.h"
 #include "Grail.h"
-#include <sys/time.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
-#include <csignal>
-#include <cstring>
-#include <future>
-#include <thread>
-#include "utils.h"
+// #include <csignal>
+// #include <stdlib.h>
+// #include <stdio.h>
+// #include <signal.h>
+// #include <cstring>
+// #include <thread>
 
-#define THREADS true
-
-bool BIDIRECTIONAL = false;
-int LABELINGTYPE = 0;
+// bool BIDIRECTIONAL = true;
+// int LABELINGTYPE = 0;
+// bool debug = false;
 int DIM = 2;
 char* filename = NULL;
 char* testfilename = NULL;
-bool debug = false;
-bool isquer = false;		// this sould be the way to identify if the file comes from quer or not, right?
+bool isquer = false;
 float labeling_time, query_time, query_timepart;
-int alg_type = 1;
+int alg_type = 2;
 
 struct query{
 	int src;
@@ -35,6 +27,7 @@ struct query{
 	int labels;
 };
 
+/*
 void handle(int sig) {
  	char const *alg_name;
 
@@ -47,6 +40,7 @@ void handle(int sig) {
 
 	exit(1);
 }
+*/
 
 static void usage() {		// here we must specify which search we want to implement - probably bidirectional
 	cout << "\nUsage:\n"
@@ -74,10 +68,12 @@ static void parse_args(int argc, char *argv[]){
 /*
  * ADDED FUNCTIONS
  *
+ **************************************
+ *
  * This reads the queries file
  */
 
-void read_test(vector<query> &q) {
+void read_test(std::vector<query> &q) {
 	cout << "preparing queries..." << endl;
 	int s,t,label=0;
 	ifstream fstr(testfilename);
@@ -90,30 +86,28 @@ void read_test(vector<query> &q) {
 	cout << "queries are ready" << endl;
 }
 
-void print_test(vector<query> queries) {
+#if DEBUG
+void print_test(std::vector<query> queries) {
 	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
 	for (auto &q : queries) {
 		outfile <<  q.src << " " << q.trg << endl;
 	}
 }
+#endif
 
 #if THREADS
 
 /*
  * THIS FUNCTION RETURNES AS A FUTURE THE READ GRAPH
  */
-void read_graph(promise<Graph>& pgraph){
+void read_graph(std::promise<Graph>& pgraph){
 	ifstream infile(filename);
 	if (!infile) {
 		cout << "Error: Cannot open " << filename << endl;
-		return ;
+		return;
 	}
-	//Run a thread to read
-	Graph g(infile);
 
-	/*
-	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
-	g.writeGraph(outfile);*/
+	Graph g(infile);
 	pgraph.set_value(g);
 }
 
@@ -124,34 +118,31 @@ void read_graph(promise<Graph>& pgraph){
  */
 
 int main(int argc, char* argv[]) {
-	signal(SIGALRM, handle);
+	// signal(SIGALRM, handle);
 	parse_args(argc,argv);
 
 	/*
 	 *	Read Graph from the input file AND prepare queries
 	 */
+
 	srand48(time(NULL));
 	struct timeval after_time, before_time, after_timepart;
 	gettimeofday(&before_time, NULL);
 
-	vector<query> queries;
+	std::vector<query> queries;
+	// std::vector<query>::iterator qit;
 
 #if THREADS
 
-	/*
-	 * Graph reading thread returns the graph as a promise
-	 */
-	promise<Graph> pgraph;
-	future<Graph> fgraph = pgraph.get_future();
-	std::thread readGraphThread(read_graph,ref(pgraph));
-	std::thread testfileThread(&read_test, ref(queries));
+	// Graph reading thread returns the graph as a promise
+	std::promise<Graph> pgraph;
+	std::future<Graph> fgraph = pgraph.get_future();
+	std::thread readGraphThread(read_graph,std::ref(pgraph));
+	std::thread testfileThread(&read_test, std::ref(queries));
 
 	testfileThread.join();
-	/*
-	 * While the graph is running run a thread that reads the test file
-	 */
 
-
+	// While the graph is running run a thread that reads the test file
 	Graph g = fgraph.get();
 	readGraphThread.join();
 
@@ -177,21 +168,15 @@ int main(int argc, char* argv[]) {
 	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
 			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 	cout << "#graph read time: " << labeling_time << " (ms)" << endl;
-
-	// ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.gra");
-	// g.writeGraph(outfile);
-	//print_test(queries);
 	cout << "#vertex size: " << g.num_vertices() << "\t#edges size: " << g.num_edges() << endl;
 
 	int gsize = g.num_vertices();
 	bool r;
 
-
-
-
 	/*
 	 * Labeling happens here
 	 */
+
 	gettimeofday(&before_time, NULL);
 
 	Grail grail(g, DIM);
@@ -202,29 +187,32 @@ int main(int argc, char* argv[]) {
 			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 	cout << "#construction time: " << labeling_time << " (ms)" << endl;
 
-
-
 	/*
 	 * Query processing happens here
 	 */
+
 	cout << "process queries..." << endl;
 	gettimeofday(&before_time, NULL);
 
 	int source, target;
 	int reachable = 0, nonreachable =0;
-	// vector<query>::iterator q;
 	int success = 0, fail = 0;
 
 	/*
-	 * Let's put the false positives and negatives in respective files
-	 * for this I created a 'Reports' folder
+	 * Let's put the false positives and negatives in respective files,
+	 * For this I created a 'Reports' folder
 	 */
+
 	ofstream falsepos("../Reports/falsepositives.que");
 	ofstream falseneg("../Reports/falsenegatives.que");
-	for (auto &q : queries) {		// let's just make sure Savino likes this...
+
+	/*
+	 * Here we use auto, but let's just make sure Savino likes this, otherwise we'll use a vector iterator
+	 */
+	for (auto &qit : queries) {
 		switch(alg_type) {
-			case 1: r = grail.reach(q.src, q.trg); break;
-			case 2: r = grail.bidirectionalReach(q.src, q.trg); break;
+			case 1: r = grail.reach(qit.src, qit.trg); break;
+			case 2: r = grail.bidirectionalReach(qit.src, qit.trg); break;
 		}
 		if(isquer){
 			(r==true) ? reachable++ : nonreachable++;
@@ -232,17 +220,17 @@ int main(int argc, char* argv[]) {
 			if(r==true) {
 				reachable++;
 				success++;
-				if(q.labels == 0) {
-					falsepos << "False positive pair = " << q.src << " " << q.trg << " " << q.labels << endl;
-					falsepos << "Levels : " << q.src  << "->" << g[q.src ].top_level << " " << q.trg << "->" << g[q.trg].top_level << endl;
+				if(qit.labels == 0) {
+					falsepos << "False positive pair = " << qit.src << " " << qit.trg << " " << qit.labels << endl;
+					falsepos << "Levels : " << qit.src  << "->" << g[qit.src ].top_level << " " << qit.trg << "->" << g[qit.trg].top_level << endl;
 					fail++;
 					success--;
 				}
 			} else {
 				nonreachable++;
 				success++;
-				if(q.labels == 1) {
-					falseneg << "False negative pair = " << q.src  << " " << q.trg << " " << q.labels << endl;
+				if(qit.labels == 1) {
+					falseneg << "False negative pair = " << qit.src  << " " << qit.trg << " " << qit.labels << endl;
 					fail++;
 					success--;
 				}
@@ -269,22 +257,4 @@ int main(int argc, char* argv[]) {
 			"\t DIM = " << DIM << endl;
 	cout << "Labeling_time = " << labeling_time  << "\t Query_Time = " << query_time <<
 			"\t Index_Size = " << gsize*DIM*2  << endl;
-	
-	char const *alg_name;
-
-	switch(alg_type) {
-		case 1: alg_name= "GRAIL";  break;
-		case 2: alg_name= "GRAILBI";  break;
-	}
-	
-	/* I'm commenting this since there is no comparison to be done
-	 * we're just using one algorithm and one labeling type
-	cout << "COMPAR:\n" <<
-			"Algorithm name: " << alg_name << "\n"
-			"Traversals number: " << DIM << "\n"
-			"Labeling time: " << labeling_time << "\n"
-			"Query time: " << query_time << "\n"
-			"Total call: " << grail.TotalCall << "\n"	// What is this for?!
-			"Reachable: " << reachable << endl;
-	*/
 }
