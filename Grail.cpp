@@ -31,18 +31,13 @@ Grail::Grail(Graph& graph, int Dim): g(graph), dim(Dim) { // @suppress("Class me
 	visited = new int[maxid];
 	QueryCnt = 0;
 	for(i = 0 ; i<maxid; i++){
-#if VECTOR
-		//TODO destroy element after grail program
-		graph[i].pre = new std::vector<int>(dim);
-		graph[i].post = new std::vector<int>(dim);
-		graph[i].middle = new std::vector<int>(dim);
-#else
-		graph[i].pre = new int[dim];
-		graph[i].post = new int[dim];
-		graph[i].middle = new int[dim];
-#endif
+		graph[i].pre = new std::vector<int>();
+		graph[i].post = new std::vector<int>();
+		//graph[i].middle = new int[dim];
 		visited[i] = -1;
 	}
+
+	cout << "creating new vectors" << endl;
 	cout << "Graph Size = " << maxid << endl;
 
 	int maxThread = std::thread::hardware_concurrency();
@@ -56,9 +51,11 @@ Grail::Grail(Graph& graph, int Dim): g(graph), dim(Dim) { // @suppress("Class me
 #endif
 		cout << "Labeling " << i << " in progress" << endl;
 	}
-
+#if THREADS
 	for(auto &t : threadPool)
 		t.join();
+#endif
+
 	cout << "labelings completed" << endl;
 	// PositiveCut = NegativeCut = TotalCall = TotalDepth = CurrentDepth = 0;
 }
@@ -74,7 +71,6 @@ Grail::~Grail() {
 
 // compute interval label for each node of tree (pre_order, post_order)
 void Grail::randomlabeling(Graph& tree, int labelid) {
-
 	std::vector<int> roots = tree.getRoots();
 	std::vector<int>::iterator sit;
 	int pre_post = 0;
@@ -96,17 +92,26 @@ int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int
 	random_shuffle(el.begin(),el.end());
 	EdgeList::iterator eit;
 	int pre_order = tree.num_vertices()+1;
-	tree[vid].middle->push_back(pre_post);
+	//tree[vid].middle->push_back(pre_post);
 	for (eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit]){
 			pre_order = min(pre_order, visit(tree, *eit, pre_post, visited, labelid));
 		} else {
+			#if VECTOR
 			pre_order = min(pre_order, tree[*eit].pre->at(labelid));
+			#else
+			pre_order = min(pre_order, tree[*eit].pre->back());
+			#endif
 		}
 	}
 	pre_order = min(pre_order, pre_post);
+#if VECTOR
 	tree[vid].pre->at(labelid) = pre_order;
 	tree[vid].post->at(labelid) = pre_post;
+#else
+	tree[vid].pre->push_back(pre_order);
+	tree[vid].post->push_back(pre_post);
+#endif
 	pre_post++;
 	return pre_order;
 }
@@ -198,7 +203,7 @@ bool Grail::bidirectionalReach(int src,int trg){
 	cout << endl;
 
 #endif
-	cout << endl;
+
 
 	EdgeList el;
 	std::vector<int>::iterator ei;

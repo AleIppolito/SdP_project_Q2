@@ -11,8 +11,6 @@
 class Grail {
 	private:
 		Graph& g;
-		struct timeval after_time, before_time;
-		float run_time;
 		int dim;
 		int *visited;
 		int QueryCnt;
@@ -22,6 +20,7 @@ class Grail {
 		~Grail();
 		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int labelid);
 		static void randomlabeling(Graph& tree, int labelid);
+
 
 		void printLabeling(Graph& tree, int i, ostream& out);
 		bool reach(int src, int trg);

@@ -74,7 +74,6 @@ static void parse_args(int argc, char *argv[]){
  */
 
 void read_test(std::vector<query> &q) {
-	cout << "preparing queries..." << endl;
 	int s,t,label=0;
 	ifstream fstr(testfilename);
 	if(isquer)
@@ -83,7 +82,6 @@ void read_test(std::vector<query> &q) {
 	else
 		while(fstr >> s >> t >> label)
 			q.push_back({s,t,label});
-	cout << "queries are ready" << endl;
 }
 
 #if DEBUG
@@ -101,16 +99,9 @@ void print_test(std::vector<query> queries) {
  * THIS FUNCTION RETURNES AS A FUTURE THE READ GRAPH
  */
 void read_graph(std::promise<Graph>& pgraph){
-	ifstream infile(filename);
-	if (!infile) {
-		cout << "Error: Cannot open " << filename << endl;
-		return;
-	}
-
-	Graph g(infile);
+	Graph g(filename);
 	pgraph.set_value(g);
 }
-
 #endif
 
 /*
@@ -130,31 +121,22 @@ int main(int argc, char* argv[]) {
 	gettimeofday(&before_time, NULL);
 
 	std::vector<query> queries;
-	// std::vector<query>::iterator qit;
 
 #if THREADS
-
 	// Graph reading thread returns the graph as a promise
 	std::promise<Graph> pgraph;
 	std::future<Graph> fgraph = pgraph.get_future();
 	std::thread readGraphThread(read_graph,std::ref(pgraph));
 	std::thread testfileThread(&read_test, std::ref(queries));
 
-	testfileThread.join();
 
 	// While the graph is running run a thread that reads the test file
 	Graph g = fgraph.get();
 	readGraphThread.join();
-
+	testfileThread.join();
 #else
 
-	ifstream infile(filename);
-	if (!infile) {
-		cout << "Error: Cannot open " << filename << endl;
-		return 1;
-	}
-
-	Graph g(infile);
+	Graph g(filename);
 
 	read_test(queries);
 
@@ -169,14 +151,12 @@ int main(int argc, char* argv[]) {
 			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 	cout << "#graph read time: " << labeling_time << " (ms)" << endl;
 	cout << "#vertex size: " << g.num_vertices() << "\t#edges size: " << g.num_edges() << endl;
-
-	int gsize = g.num_vertices();
-	bool r;
-
+	ofstream out("./out");
+	g.writeGraph(out);
 	/*
 	 * Labeling happens here
 	 */
-
+	cout << "Starting GRAIL labeling... " << endl;
 	gettimeofday(&before_time, NULL);
 
 	Grail grail(g, DIM);
@@ -185,19 +165,20 @@ int main(int argc, char* argv[]) {
 
 	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
 			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-	cout << "#construction time: " << labeling_time << " (ms)" << endl;
+	cout << "#Grail construction time: " << labeling_time << " (ms)" << endl;
 
 	/*
 	 * Query processing happens here
 	 */
 
-	cout << "process queries..." << endl;
+	cout << "Starting reachability testing..." << endl;
 	gettimeofday(&before_time, NULL);
 
 	int source, target;
 	int reachable = 0, nonreachable =0;
 	int success = 0, fail = 0;
 
+	bool r;
 	/*
 	 * Let's put the false positives and negatives in respective files,
 	 * For this I created a 'Reports' folder
@@ -256,5 +237,5 @@ int main(int argc, char* argv[]) {
 	cout << "filename = " << filename << "\t testfilename = " << testfilename <<
 			"\t DIM = " << DIM << endl;
 	cout << "Labeling_time = " << labeling_time  << "\t Query_Time = " << query_time <<
-			"\t Index_Size = " << gsize*DIM*2  << endl;
+			"\t Index_Size = " << g.num_vertices()*DIM*2  << endl;
 }
