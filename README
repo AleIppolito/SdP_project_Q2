@@ -1,86 +1,51 @@
-***************************************************************
-*****************      GRAIL (improved)     *******************
-**** Author :           Hilmi YILDIRIM      *******************
-**** please contact yildih2@cs.rpi.edu for any problems *******
-***************************************************************
-THIS PROGRAM HAS BEEN MODIFIED FOR TEH SDP COURSE PROJECT
+****************************************************************************************************************
+*******************************************   GRAIL (multithreaded)   ******************************************
+*************************  Authors: Federico MARESCA, Alessandro IPPOLITO, Galib ALILI  ************************
+****************************************************************************************************************
+
+################################################################################################################
+###########  DISCLAIMER: This program has been modified from the original version by Hilmi YILDIRIM  ###########
+#####################  The original code is available at https://github.com/zakimjz/grail  #####################
+################################################################################################################
 
 The code is associated with the following papers:
-1) Grail: scalable reachability index for large graphs ( VLDB'10 paper)
-and
-2) GRAIL: A Scalable Index for Reachability Queries in Very Large Graphs (journal version, under review)
+1) Grail: scalable reachability index for large graphs (VLDB'10 paper)
 
 Detailed usage is explained below, here we give sample usage
-for the main methods of the papers above.  
 ---------------------------------------------------------------
-1) ./grail sample.gra -test sample.test -dim 2
-2) ./grail sample.gra -test sample.test -dim 2 -t -2 -ltype 1
+./grail sample.gra 2 sample.test
 ---------------------------------------------------------------
-
-This package is provided for the repeatability purposes. It may
-contain some (experimental )sections that is not mentioned in 
-the paper. PLEASE READ THE INSTRUCTIONS CAREFULLY
-to run the program flawlessly. Feel free to use it for
-research purposes.
-
   
-The code is written in c++ and built on the codebase
-of the paper PathTree (by Jin et al.). It uses the
-same graph format.
+The code is written in C++.
 
 To compile :
 make
 
-To run :
+To run with instructions:
 ./grail -h
 
 Usage:
- grail [-h] <filename> -test <testfilename> [-dim <DIM>] [-skip] [-ex] [-ltype <labelingtype>] [-t <alg_type>]
+ grail [-h] <filename> dim <testfilename>
 Description:
-        -h                      Print the help message.
-  <filename> is the name of the input graph in gra format.
-        -test           Set the queryfile which contains a line of <source> <target> <reachability> for each query. 
-        -dim            Set the number of traversals to be performed. The default value is 5.
-        -ex             Use exception lists method instead of pruning. Default is not using exception lists.
-        -skip           Skip the phase converting the graph into a dag. Use only when the input is already a DAG.
-        -t <alg_type>           alg_type can take 8 different values.  Default value is 1.
-                         1  : Basic Search (used in the original VLDB'10 paper) 
-                         3  : Bidirectional Search 
-                       
-        -ltype <labeling_type>          labeling_type can take 6 different values.  Default value is 0.
-                         0  : Completely randomized traversals.  
-                         1  : Randomized Reverse Pairs Traversals (usually provides the best quality) 
+  -h              Print this help message.
+  <filename>      The name of the input graph in gra format.
+  dim             Set the number of traversals to be performed. The default value is 2.
+  Algorithm type: Bidirectional Search.
+  Labeling type:  Completely randomized traversals.  
                       
 INPUT GRAPH FORMAT: (see sample.gra)
- Notes : Second line gives the number of nodes n. The node ids should be in [0,n-1]. 
+Note: First line gives the number of nodes n. The node ids should be in [0,n-1].
 
 TEST FILE FORMAT: (see sample.test)
- - Each line contains triples (<source> <target> <reachability>)
- The program compares its output with <reachability> value of each query and prints a success ratio which is supposed to be 1.
- However if you dont know the ground truth, (i.e. for very large graphs) 
-     you can give any value for <reachability> and ignore the success ratio.
-
- 
-GRAPH is already a DAG:
-In this case please use -skip option to avoid recomputation of strongly connected components.
+If the file is in "Quer" format (means no ground truth):
+  - Each line contains tuple (<source> <target>)
+If the file is in standard format:
+  - Each line contains triples (<source> <target> <reachability>)
+  - The program compares its output with <reachability> value of each query and prints a success ratio which is supposed to be 1.
+    However if you dont know the ground truth, (i.e. for very large graphs) you can give any value for <reachability> and ignore the success ratio.
 
 Selection of Dimensionality:
-For sparse graphs. (avg. degree up to 3) -dim 2 is quite optimal.
-For denser graphs, you can increase it up to 5. 
+For sparse graphs (avg. degree up to 3): dim 2 is quite optimal.
+For denser graphs, you can increase it up to 5.
 
-Selection of Labeling Type:
-The best labeling type in our experiments is reverse pairs. (-ltype 1)
-Please see the paper for details of different labelings.
-
-Selection of the Algorithm:
-The best algorithm in our experiments is (-t -2)
-Please see the paper for details of different algorithms.
-
-Sample usage:
-./grail input.gra -test test.txt -t -2 -ltype 1 -dim 2 (this the main final algorithm proposed in 2nd paper)
-./grail input.gra -test test.txt -t 1 -ltype 0 -dim 2 (this is the algorithm proposed in VLDB'10 paper )
-
-
-The program reports the success rate, construction time, query time and the memory usage. 
-
-
+The program reports the success rate, construction time and query time.
