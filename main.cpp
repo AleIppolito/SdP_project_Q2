@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) Hilmi Yildirim 2010,2011.
  * Changes made on his code, available on Git
@@ -111,7 +112,6 @@ void read_graph(std::promise<Graph>& pgraph){
 int main(int argc, char* argv[]) {
 	// signal(SIGALRM, handle);
 	parse_args(argc,argv);
-
 	/*
 	 *	Read Graph from the input file AND prepare queries
 	 */
@@ -191,10 +191,7 @@ int main(int argc, char* argv[]) {
 	 * Here we use auto, but let's just make sure Savino likes this, otherwise we'll use a vector iterator
 	 */
 	for (auto &qit : queries) {
-		switch(alg_type) {
-			case 1: r = grail.reach(qit.src, qit.trg); break;
-			case 2: r = grail.bidirectionalReach(qit.src, qit.trg); break;
-		}
+		r = grail.bidirectionalReach(qit.src, qit.trg);
 		if(isquer){
 			(r==true) ? reachable++ : nonreachable++;
 		} else {

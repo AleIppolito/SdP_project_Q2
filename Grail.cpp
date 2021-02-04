@@ -11,6 +11,7 @@
 
 vector<int> _index;
 vector<double> customIndex;
+std::mutex label_lock;
 
 template<class T> struct index_cmp {
 	index_cmp(const T arr) : arr(arr) {}
@@ -27,22 +28,16 @@ template<class T> struct custom_cmp {
 };
 
 Grail::Grail(Graph& graph, int Dim): g(graph), dim(Dim) { // @suppress("Class members should be properly initialized")
-	int i,maxid = g.num_vertices();
-	visited = new int[maxid];
-	QueryCnt = 0;
+	int8_t i;
+	int maxid = g.num_vertices();
+	
 	for(i = 0 ; i<maxid; i++){
-		graph[i].pre = new std::vector<int>();
-		graph[i].post = new std::vector<int>();
+		graph[i].labels.resize(dim);
 		//graph[i].middle = new int[dim];
-		visited[i] = -1;
 	}
-
-	cout << "creating new vectors" << endl;
-	cout << "Graph Size = " << maxid << endl;
 
 	int maxThread = std::thread::hardware_concurrency();
 	int nThreads = min(dim, maxThread);
-	std::vector<std::thread> threadPool;
 	for(i=0; i<dim; i++){
 #if THREADS
 		threadPool.emplace_back(std::thread(&randomlabeling, ref(graph), i));
@@ -70,7 +65,7 @@ Grail::~Grail() {
 
 
 // compute interval label for each node of tree (pre_order, post_order)
-void Grail::randomlabeling(Graph& tree, int labelid) {
+void Grail::randomlabeling(Graph& tree, unsigned short int labelid) {
 	std::vector<int> roots = tree.getRoots();
 	std::vector<int>::iterator sit;
 	int pre_post = 0;
@@ -80,12 +75,12 @@ void Grail::randomlabeling(Graph& tree, int labelid) {
 		pre_post++;
 		visit(tree, *sit, pre_post, visited, labelid);
 	}
-
 }
 
 
 // traverse tree to label node with pre and post order by giving a start node
-int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int labelid) {
+int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited,
+		 		unsigned short int labelid) {
  	//cout << "entering " << vid << "labelid" << endl;
 	visited[vid] = true;
 	EdgeList el = tree.out_edges(vid);
@@ -95,23 +90,14 @@ int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, int
 	//tree[vid].middle->push_back(pre_post);
 	for (eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit]){
-			pre_order = min(pre_order, visit(tree, *eit, pre_post, visited, labelid));
+			pre_order = min(pre_order, visit(tree, *eit, pre_post, visited, labelid, pre, post));
 		} else {
-			#if VECTOR
-			pre_order = min(pre_order, tree[*eit].pre->at(labelid));
-			#else
-			pre_order = min(pre_order, tree[*eit].pre->back());
-			#endif
+			pre_order = min(pre_order, tree[*eit].getPre(labelid) );
 		}
 	}
 	pre_order = min(pre_order, pre_post);
-#if VECTOR
-	tree[vid].pre->at(labelid) = pre_order;
-	tree[vid].post->at(labelid) = pre_post;
-#else
-	tree[vid].pre->push_back(pre_order);
-	tree[vid].post->push_back(pre_post);
-#endif
+	tree[vid].labels.at(labelid) = Label(pre_order,pre_post);
+	cout << "Copying vertes label " << vid << " " << tree[vid].getPre(labelid) << " " << tree[vid].getPost(labelid) << endl;
 	pre_post++;
 	return pre_order;
 }
@@ -125,114 +111,66 @@ GRAIL Query Functions
  * the exception
  */
 bool Grail::contains(int src,int trg){
-	int i,j;
-	for(i=0;i<dim;i++){
-			if(g[src].pre->at(i) > g[trg].pre->at(i)) {
+	for(int i=0;i<dim;i++){
+			if(g[src].getPre(i) > g[trg].getPre(i)) {
 				return false;
 			}
-			if(g[src].post->at(i) < g[trg].post->at(i)){
+			if(g[src].getPost(i) < g[trg].getPost(i)){
 				return false;
 			}
 		}
 	return true;
 }
 
-bool Grail::reach(int src,int trg){
-	/*
-	 * Check Trivial Case first
-	 */
-	if(src == trg){
-		return true;
-	}
-
-	if(!contains(src,trg))						// if it does not contain reject
-		return false;
-
-	visited[src]=++QueryCnt;
-	return go_for_reach(src,trg);			//search for reachability in children
-}
-
-/*
- * This function traverses the tree until it finds the trg label
- * or returns false
- */
-bool Grail::go_for_reach(int src, int trg) {
-	if(src==trg)
-		return true;
-			
-	visited[src] = QueryCnt;
-	EdgeList el = g.out_edges(src);
-	EdgeList::iterator eit;
-
-	for (eit = el.begin(); eit != el.end(); eit++) {
-		if(visited[*eit]!=QueryCnt && contains(*eit,trg)){
-			if(go_for_reach(*eit,trg)){
-				return true;
-			}	
-		}
-	}
-	return false;
-}
-
 bool Grail::bidirectionalReach(int src,int trg){
-	std::queue<int> forward;
-	std::queue<int> backward;
+	/*Check trivial cases first: 
+	* src == trg reachable 
+	* src has no children or trg has no parents then reachability is impossible
+	* src does not contain trg then it's not reachable
+	*/
 	if(src == trg )
 		return true;
-
-	if(!contains(src,trg))						// if it does not contain reject
+	if( !g.out_degree(src) || !g.in_degree(trg) || !contains(src,trg))
 		return false;
 	
-	QueryCnt++;
 
-#if DEBUG
+	std::queue<int> forward;
+	std::queue<int> backward;
+	std::vector<char> curvisit( g.num_vertices(), 'n');
 
-	for(int i=0; i<visited.length(); i++)
-		cout << visited[i] << "\t";
-	cout << endl;
-
-#endif
-	visited[src] = QueryCnt;
+	curvisit[src] = 'f';
 	forward.push(src);
-	visited[trg] = -QueryCnt;
+	curvisit[trg] = 'b';
 	backward.push(trg);
-#if DEBUG
-
-	for(int i=0; i<visited.length(); i++)
-		cout << visited[i] << "\t";
-	cout << endl;
-
-#endif
-
 
 	EdgeList el;
 	std::vector<int>::iterator ei;
-	int next;
+	char next;
 	while(!forward.empty() && !backward.empty()){
-
+		//LOOK DOWN
 		next = forward.front();
 		forward.pop();
 		el = g.out_edges(next);
 		//for each child of start node
 			for (ei = el.begin(); ei != el.end(); ei++){
-				if(visited[*ei]==-QueryCnt){
+				if(curvisit[*ei]=='b'){
 					return true;
-				}else if(visited[*ei]!=QueryCnt && contains( *ei,trg ) ){
+				}else if(curvisit[*ei]!='f' && contains( *ei,trg ) ){
 					forward.push(*ei);
-					visited[*ei] = QueryCnt;
+					curvisit[*ei] = 'f';
 				}
 			}
-
+		//LOOK UP
 		next = backward.front();
 		backward.pop();
 		el = g.in_edges(next);
 
 			for (ei = el.begin(); ei != el.end(); ei++){
-				if(visited[*ei]==QueryCnt){
+				if(curvisit[*ei]=='f'){
 					return true;
-				}else if(visited[*ei]!=-QueryCnt && contains(src,*ei) ){
+				}else if(curvisit[*ei]!='b' && contains(src,*ei) ){
 					backward.push(*ei);
-					visited[*ei]=-QueryCnt;
+					curvisit[*ei]='b';
 				}
 			}
 

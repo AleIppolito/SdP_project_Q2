@@ -22,13 +22,13 @@ Graph::Graph(GRA& g) {
 
 
 #if THREADS
-Graph::Graph(char* filename) {
-	readGraph2(filename);
-}
+	Graph::Graph(char* filename) {
+		readGraph2(filename);
+	}
 #else
-Graph::Graph(char *filename) {
-	readGraph(filename);
-}
+	Graph::Graph(char *filename) {
+		readGraph(filename);
+	}
 #endif
 Graph::~Graph() {}
 
@@ -44,38 +44,38 @@ void Graph::clear() {
 bool Graph::contains(int src,int trg,int dim){
 	int i;
 	for(i=0; i<dim; i++){
-#if VECTOR
-		if(graph[src].node.pre->at(i) > graph[src].node.pre->at(i))
-#else
-		if(graph[src].node.pre[i] > graph[trg].node.pre[i])
-#endif
-			return false;
-#if VECTOR
-		if(graph[src].node.post->at(i) < graph[trg].node.post->at(i))
-#else
-		if(graph[src].node.post[i] < graph[trg].node.post[i])
-#endif
-			return false;
-	}
+	#if VECTOR
+			if(graph[src].node.pre->at(i) > graph[src].node.pre->at(i))
+	#else
+			if(graph[src].node.pre[i] > graph[trg].node.pre[i])
+	#endif
+				return false;
+	#if VECTOR
+			if(graph[src].node.post->at(i) < graph[trg].node.post->at(i))
+	#else
+			if(graph[src].node.post[i] < graph[trg].node.post[i])
+	#endif
+				return false;
+		}
 	return true;
 }
 
 bool Graph::incrementalContains(int src,int trg,int cur){
 	int i;
 	for(i=0; i<cur; i++){
-#if VECTOR
-		if(graph[src].node.pre->at(i) > graph[trg].node.pre->at(i))
-#else
-		if(graph[src].node.pre[i] > graph[trg].node.pre[i])
-#endif
-			return false;
-#if VECTOR
-		if(graph[src].node.post->at(i) < graph[trg].node.post->at(i))
-#else
-		if(graph[src].node.post[i] < graph[trg].node.post[i])
-#endif
-			return false;
-	}
+	#if VECTOR
+			if(graph[src].node.pre->at(i) > graph[trg].node.pre->at(i))
+	#else
+			if(graph[src].node.pre[i] > graph[trg].node.pre[i])
+	#endif
+				return false;
+	#if VECTOR
+			if(graph[src].node.post->at(i) < graph[trg].node.post->at(i))
+	#else
+			if(graph[src].node.post[i] < graph[trg].node.post[i])
+	#endif
+				return false;
+		}
 	return true;
 }
 
@@ -217,12 +217,13 @@ void Graph::readGraph(char *filename) {
 		cout << "Error: Cannot open " << filename << endl;
 		return ;
 	}
+	
 	int n;
 	in >> n;
 	// initialize
 	vsize = n;
 	graph = GRA(n, Node());
-
+	cout << n << endl;
 	int sid = 0;
 	int tid = 0;
 	char hash;
@@ -303,6 +304,7 @@ void Graph::addVertex(int vid) {
 
 	Vertex v;
 	v.id = vid;
+	cout << "Entering node : " << v.id << endl;
 	v.top_level = -1;
 	graph[vid] = Node(v,EdgeList(),EdgeList());
 }
@@ -383,14 +385,10 @@ bool Graph::hasEdge(int src, int trg) {
 
 }
 
-/* return vertex list of graph
-VertexList& Graph::vertices() {
-	VertexList vl;
-	for(auto &n : graph){
-		vl.push_back(n.node);
-	}
-	return vl;
-}*/
+// return vertex list of graph
+GRA& Graph::nodes() {
+	return this->graph;
+}
 
 Graph& Graph::operator=(const Graph& g) {
 	if (this != &g) {

@@ -5,7 +5,7 @@
 
 #ifndef _GRAPH_H
 #define _GRAPH_H
-#define THREADS true
+#define THREADS false
 #define DEBUG false
 #include <iostream>
 #include <fstream>
@@ -18,6 +18,7 @@
 #include <mutex>
 #include <atomic>
 
+#include <stdint.h>
 #include <condition_variable>
 #include "Threadpool.h"
 //#include <ext/hash_map>
@@ -37,21 +38,37 @@ using namespace std;
 #define MAX_VAL 10000000
 #define MIN_VAL -10000000
 
-
+struct Label{
+	int pre;
+	int post;
+	Label(int PRE, int POST) : pre(PRE), post(POST){// @suppress("Class members should be properly initialized")
+	};
+	Label(){
+	};
+};
 struct Vertex {
 	int id;
 	int top_level;			// topological level
 	int min_int;
-	std::vector<int> *pre;
-	std::vector<int> *post;
-	std::vector<int> *middle;
-
+	std::vector<Label> labels;
 	Vertex(int ID) : id(ID) { // @suppress("Class members should be properly initialized")
 		top_level = -1;
 	}
 	Vertex(){ // @suppress("Class members should be properly initialized")
 		top_level = -1;
 	};
+	int getid(){
+		return id;
+	}
+	Label getLabel(int labelid){
+		return labels[labelid];
+	}
+	int getPost(int labelid){
+		return labels[labelid].post;
+	}
+	int getPre(int labelid){
+		return labels[labelid].pre;
+	}
 };
 
 struct VertexCompare {
@@ -107,7 +124,7 @@ class Graph {
 		void addEdge(int, int);
 		int num_vertices();
 		int num_edges();
-		VertexList& vertices();
+		GRA& nodes();
 		EdgeList& out_edges(int);
 		EdgeList& in_edges(int);
 		int out_degree(int);
