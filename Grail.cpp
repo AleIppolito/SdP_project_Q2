@@ -27,7 +27,7 @@ template<class T> struct custom_cmp {
 	const T arr;
 };
 
-Grail::Grail(Graph& graph, int Dim): g(graph), dim(Dim) { // @suppress("Class members should be properly initialized")
+Grail::Grail(Graph& graph, int Dim, ThreadPool& p): g(graph), dim(Dim) { // @suppress("Class members should be properly initialized")
 	int8_t i;
 	int maxid = g.num_vertices();
 	

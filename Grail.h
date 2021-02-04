@@ -15,7 +15,7 @@ class Grail {
 		int QueryCnt;
 	public:
 		// unsigned int PositiveCut, NegativeCut, TotalCall, TotalDepth, CurrentDepth;
-		Grail(Graph& graph, int dim);
+		Grail(Graph& graph, int dim, ThreadPool&);
 		~Grail();
 		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, unsigned short int labelid);
 		static void randomlabeling(Graph& tree, unsigned short int labelid);

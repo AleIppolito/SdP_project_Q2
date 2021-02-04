@@ -9,15 +9,8 @@
 #define THREADS true
 #define DEBUG false
 
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <queue>
-#include <future>
-#include <sys/time.h>
-#include <algorithm>
-#include <atomic>
 #include "Threadpool.h"
+// #include <future>
 
 
 namespace std {using namespace __gnu_cxx;}
@@ -89,22 +82,24 @@ class Graph {
 	private:
 		GRA graph;
 		int vsize;
-		
 	public:
 		Graph();
-		Graph(int);
 		Graph(GRA&);
+#if THREADS
+		Graph(char*, ThreadPool&);
+#else
 		Graph(char*);
-		Graph(istream&);
+#endif
 		~Graph();
+
 		bool contains(int src, int trg,int dim);
 		bool incrementalContains(int src, int trg, int cur);
+		void readGraph(char*);
 
-		void innerRead(std::streampos start, std:: streampos end, char *filename, int n);
-		void innerRead2(string buf, int sid, int n);
-		void readGraph(char* filename);
-		void readGraph2(char* filename);
-		//void readGraphQ(char* filename);
+		// void innerRead(std::streampos start, std:: streampos end, char *filename, int n);
+		// void innerRead2(string buf, int sid, int n);
+		// void readGraph2(char* filename);
+		// void readGraphQ(char* filename);
 
 		void writeGraph(ostream&);
 		void printGraph();
@@ -121,9 +116,7 @@ class Graph {
 		bool hasEdge(int, int);	
 		Graph& operator=(const Graph&);
 		Vertex& operator[](const int);
-		
 		void clear();
-		// void strTrimRight(string& str);
 };	
 
 #endif

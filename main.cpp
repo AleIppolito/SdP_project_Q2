@@ -10,7 +10,7 @@ int DIM = 2;
 char* filename = NULL;
 char* testfilename = NULL;
 bool isquer = false;
-float labeling_time, query_time, query_timepart;
+float labeling_time, query_time;
 
 struct query{
 	int src;
@@ -31,24 +31,19 @@ static void usage() {		// here we must specify which search we want to implement
 
 
 static void parse_args(int argc, char *argv[]){
-	if (argc < 4) {
+	if (argc < 3) {	// minimum is ./grail <filename> <testfilename>
 		usage();
 		exit(0);
 	}
- 	int i = 1;
  	filename = argv[1];
- 	DIM = atoi(argv[2]);
- 	testfilename = argv[3];
+ 	if(isdigit(*argv[2])) {
+ 		DIM = atoi(argv[2]);
+ 		testfilename = argv[3];
+ 	} else
+ 		testfilename = argv[2];
 }
 
-/*
- * ADDED FUNCTIONS
- *
- **************************************
- *
- * This reads the queries file
- */
-
+// Read testfilename and prepare queries vector
 void read_test(std::vector<query> &q) {
 	int s,t,label=0;
 	ifstream fstr(testfilename);
@@ -61,85 +56,60 @@ void read_test(std::vector<query> &q) {
 }
 
 #if DEBUG
+
 void print_test(std::vector<query> queries) {
 	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
 	for (auto &q : queries) {
 		outfile <<  q.src << " " << q.trg << endl;
 	}
 }
+
 #endif
 
-#if THREADS
 
-/*
- * THIS FUNCTION RETURNES AS A FUTURE THE READ GRAPH
- */
-void read_graph(std::promise<Graph>& pgraph){
-	Graph g(filename);
-	pgraph.set_value(g);
-}
-#endif
-
-/*
- * **********************************
- */
+// --------------------------------------------------------------------
 
 int main(int argc, char* argv[]) {
+	parse_args(argc, argv);
+
 #if THREADS
-
 	ThreadPool pool(std::thread::hardware_concurrency());
-
 #endif
-	parse_args(argc,argv);
-	/*
-	 *	Read Graph from the input file AND prepare queries
-	 */
 
-	srand48(time(NULL));
+	// Read Graph from the input file AND prepare queries
+	std::vector<query> queries;
+	srand48(time(NULL));	// random init
 	struct timeval after_time, before_time, after_timepart;
 	gettimeofday(&before_time, NULL);
 
-	std::vector<query> queries;
-
 #if THREADS
-	// Graph reading thread returns the graph as a promise
-	std::promise<Graph> pgraph;
-	std::future<Graph> fgraph = pgraph.get_future();
-	std::thread readGraphThread(read_graph,std::ref(pgraph));
-	std::thread testfileThread(&read_test, std::ref(queries));
-
-
-	// While the graph is running run a thread that reads the test file
-	Graph g = fgraph.get();
-	readGraphThread.join();
-	testfileThread.join();
+	pool.addJob(read_test, std::ref(queries));
+	Graph g(filename, pool);
+	pool.waitFinished();		// synch point
 #else
-
-	Graph g(filename);
-
 	read_test(queries);
-
+	Graph g(filename);
 #endif
 
-	/*
-	 * Time check evaluation
-	 */
-
+	// Time check evaluation
 	gettimeofday(&after_time, NULL);
 	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
 			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-	cout << "#graph read time: " << labeling_time << " (ms)" << endl;
-	cout << "#vertex size: " << g.num_vertices() << "\t#edges size: " << g.num_edges() << endl;
+	cout << "#input files read time: " << labeling_time << " (ms)" << endl;
+	cout << "#graph vertexes: " << g.num_vertices() << "\t#graph edges: " << g.num_edges() << endl;
+
+#if DEBUG
 
 	ofstream out("./out");
 	g.writeGraph(out);
-	/*
-	 * Labeling happens here
-	 */
-	cout << "Starting GRAIL labeling... " << endl;
+
+#endif
+
+	// Labeling happens here
+	cout << "starting GRAIL labeling..." << endl;
 	gettimeofday(&before_time, NULL);
 
-	Grail grail(g, DIM);
+	Grail grail(g, DIM, pool);
 
 	gettimeofday(&after_time, NULL);
 

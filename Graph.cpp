@@ -4,15 +4,10 @@
  */
 
 #include "Graph.h"
-std::mutex m;
+
 Graph::Graph() {
 	graph = GRA();
 	vsize = 0;
-}
-
-Graph::Graph(int size) {
-	vsize = size;
-	graph = GRA(size, Node());
 }
 
 Graph::Graph(GRA& g) {
@@ -22,14 +17,15 @@ Graph::Graph(GRA& g) {
 
 
 #if THREADS
-	Graph::Graph(char* filename) {
-		readGraph2(filename);
+	Graph::Graph(char* filename, ThreadPool& pool) {
+		readGraph(filename);
 	}
 #else
 	Graph::Graph(char *filename) {
 		readGraph(filename);
 	}
 #endif
+
 Graph::~Graph() {}
 
 void Graph::printGraph() {
@@ -71,7 +67,8 @@ void Graph::strTrimRight(string& str) {
 		str.erase(index+1);
 	else
 		str.clear();
-}*/
+}
+
 void Graph::innerRead(std::streampos start, std::streampos end, char *filename, int n){
 
 	cout << "Start " <<start <<" "<< end<< endl;
@@ -101,8 +98,6 @@ void Graph::innerRead(std::streampos start, std::streampos end, char *filename, 
 		in.ignore();
 	}
 }
-
-
 
 void Graph::readGraph2(char* filename) {
 	struct timeval before_time, after_time;
@@ -139,9 +134,7 @@ void Graph::readGraph2(char* filename) {
 
 	for (int i=0; i<n; i++)
 		addVertex(i);
-	/*
-	 * Multithread read test 1
-	*/
+	// Multithread read test 1
 
 	bool found = true;
 	int c;
@@ -176,8 +169,7 @@ void Graph::readGraph2(char* filename) {
 					(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 
 		cout << "#Actual work time: " << labeling_time << " (ms)" << endl;
-	/*
-	 * Multithread read test 2
+	// Multithread read test 2
 
 	string buf;
 	std::vector<std::thread> workers;
@@ -193,8 +185,10 @@ void Graph::readGraph2(char* filename) {
 		}
 		for(auto &w : workers){
 					w.join();
-		}*/
+		}
 }
+*/
+
 void Graph::readGraph(char *filename) {
 	ifstream in(filename);
 	if (!in) {

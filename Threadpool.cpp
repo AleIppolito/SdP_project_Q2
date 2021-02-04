@@ -1,7 +1,12 @@
+/*
+ * New ThreadPool implementation, no futures
+ * Also divided in .h and .cpp
+ */
+
 #include "Threadpool.h"
 
 ThreadPool::ThreadPool(unsigned int n) : busy(), processed(), stop() {
-	for (unsigned int i=0; i<n; ++i)
+	for(unsigned int i=0; i<n; ++i)
 		workers.emplace_back(std::bind(&ThreadPool::thread_proc, this));
 }
 
