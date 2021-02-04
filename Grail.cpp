@@ -40,15 +40,16 @@ Grail::Grail(Graph& graph, int Dim): g(graph), dim(Dim) { // @suppress("Class me
 	int nThreads = min(dim, maxThread);
 	for(i=0; i<dim; i++){
 #if THREADS
-		threadPool.emplace_back(std::thread(&randomlabeling, ref(graph), i));
+
+		//threadPool.emplace_back(std::thread(&randomlabeling, ref(graph), i));
 #else
 		randomlabeling(graph,i);
 #endif
 		cout << "Labeling " << i << " in progress" << endl;
 	}
 #if THREADS
-	for(auto &t : threadPool)
-		t.join();
+	/*for(auto &t : threadPool)
+		t.join();*/
 #endif
 
 	cout << "labelings completed" << endl;
@@ -90,7 +91,7 @@ int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited,
 	//tree[vid].middle->push_back(pre_post);
 	for (eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit]){
-			pre_order = min(pre_order, visit(tree, *eit, pre_post, visited, labelid, pre, post));
+			pre_order = min(pre_order, visit(tree, *eit, pre_post, visited, labelid));
 		} else {
 			pre_order = min(pre_order, tree[*eit].getPre(labelid) );
 		}
@@ -101,7 +102,6 @@ int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited,
 	pre_post++;
 	return pre_order;
 }
-
 
 /*************************************************************************************
 GRAIL Query Functions

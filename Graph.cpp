@@ -43,10 +43,10 @@ void Graph::clear() {
 
 bool Graph::contains(int src,int trg,int dim){
 	int i;
-	for(i=0; i<dim; i++){
-			if(graph[src].vertex.pre->at(i) > graph[src].vertex.pre->at(i))
+	for(i=0; i<dim; i++){ 
+			if(graph[src].vertex.getPre(i) > graph[trg].vertex.getPre(i))
 				return false;
-			if(graph[src].vertex.post->at(i) < graph[trg].vertex.post->at(i))
+			if(graph[src].vertex.getPost(i) < graph[trg].vertex.getPost(i))
 				return false;
 		}
 	return true;
@@ -55,9 +55,9 @@ bool Graph::contains(int src,int trg,int dim){
 bool Graph::incrementalContains(int src,int trg,int cur){
 	int i;
 	for(i=0; i<cur; i++){
-			if(graph[src].vertex.pre->at(i) > graph[trg].vertex.pre->at(i))
+			if(graph[src].vertex.getPre(i) > graph[trg].vertex.getPre(i))
 				return false;
-			if(graph[src].vertex.post->at(i) < graph[trg].vertex.post->at(i))
+			if(graph[src].vertex.getPost(i) < graph[trg].vertex.getPost(i))
 				return false;
 		}
 	return true;

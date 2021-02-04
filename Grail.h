@@ -17,8 +17,7 @@ class Grail {
 		// unsigned int PositiveCut, NegativeCut, TotalCall, TotalDepth, CurrentDepth;
 		Grail(Graph& graph, int dim);
 		~Grail();
-		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, unsigned short int labelid,
-										 std::vector<int>& pre, std::vector<int>& post);
+		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, unsigned short int labelid);
 		static void randomlabeling(Graph& tree, unsigned short int labelid);
 
 
