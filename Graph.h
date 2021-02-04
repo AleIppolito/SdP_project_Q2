@@ -5,31 +5,19 @@
 
 #ifndef _GRAPH_H
 #define _GRAPH_H
-#define THREADS false
+
+#define THREADS true
 #define DEBUG false
+
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <thread>
 #include <queue>
 #include <future>
 #include <sys/time.h>
 #include <algorithm>
-#include <mutex>
 #include <atomic>
-
-#include <stdint.h>
-#include <condition_variable>
 #include "Threadpool.h"
-//#include <ext/hash_map>
-// #include <sstream>
-// #include <set>
-// #include <map>
-// #include <list>
-// #include <deque>
-//
-// #include <utility>
-// #include <cmath>
 
 
 namespace std {using namespace __gnu_cxx;}
@@ -81,13 +69,13 @@ typedef std::vector<int> EdgeList;		// edge list represented by vertex id list
 typedef std::vector<Vertex> VertexList;	// vertices list (store real vertex property) indexing by id
 
 struct Node {
-	Vertex node;
+	Vertex vertex;
 	EdgeList inList;
 	EdgeList outList;
-	Node(int ID) : node(ID) { // @suppress("Class members should be properly initialized")
+	Node(int ID) : vertex(ID) { // @suppress("Class members should be properly initialized")
 		}
 	Node(Vertex v, EdgeList in, EdgeList out) :
-			node(v) , inList(in), outList(out){
+			vertex(v) , inList(in), outList(out){
 				// @suppress("Class members should be properly initialized")
 		}
 	Node(){
@@ -124,7 +112,7 @@ class Graph {
 		void addEdge(int, int);
 		int num_vertices();
 		int num_edges();
-		GRA& nodes();
+		GRA& vertexes();
 		EdgeList& out_edges(int);
 		EdgeList& in_edges(int);
 		int out_degree(int);

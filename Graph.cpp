@@ -44,17 +44,9 @@ void Graph::clear() {
 bool Graph::contains(int src,int trg,int dim){
 	int i;
 	for(i=0; i<dim; i++){
-	#if VECTOR
-			if(graph[src].node.pre->at(i) > graph[src].node.pre->at(i))
-	#else
-			if(graph[src].node.pre[i] > graph[trg].node.pre[i])
-	#endif
+			if(graph[src].vertex.pre->at(i) > graph[src].vertex.pre->at(i))
 				return false;
-	#if VECTOR
-			if(graph[src].node.post->at(i) < graph[trg].node.post->at(i))
-	#else
-			if(graph[src].node.post[i] < graph[trg].node.post[i])
-	#endif
+			if(graph[src].vertex.post->at(i) < graph[trg].vertex.post->at(i))
 				return false;
 		}
 	return true;
@@ -63,17 +55,9 @@ bool Graph::contains(int src,int trg,int dim){
 bool Graph::incrementalContains(int src,int trg,int cur){
 	int i;
 	for(i=0; i<cur; i++){
-	#if VECTOR
-			if(graph[src].node.pre->at(i) > graph[trg].node.pre->at(i))
-	#else
-			if(graph[src].node.pre[i] > graph[trg].node.pre[i])
-	#endif
+			if(graph[src].vertex.pre->at(i) > graph[trg].vertex.pre->at(i))
 				return false;
-	#if VECTOR
-			if(graph[src].node.post->at(i) < graph[trg].node.post->at(i))
-	#else
-			if(graph[src].node.post[i] < graph[trg].node.post[i])
-	#endif
+			if(graph[src].vertex.post->at(i) < graph[trg].vertex.post->at(i))
 				return false;
 		}
 	return true;
@@ -304,7 +288,7 @@ void Graph::addVertex(int vid) {
 
 	Vertex v;
 	v.id = vid;
-	cout << "Entering node : " << v.id << endl;
+	cout << "Entering vertex : " << v.id << endl;
 	v.top_level = -1;
 	graph[vid] = Node(v,EdgeList(),EdgeList());
 }
@@ -315,15 +299,8 @@ void Graph::addEdge(int sid, int tid) {
 	if (tid >= graph.size())
 		addVertex(tid);
 	// update edge list
-#if THREAD
-	std::lock_guard<std::mutex> guard(m);
-		graph[tid].inList.push_back(sid);
-		graph[sid].outList.push_back(tid);
-#else
-
-		graph[tid].inList.push_back(sid);
-		graph[sid].outList.push_back(tid);
-#endif
+	graph[tid].inList.push_back(sid);
+	graph[sid].outList.push_back(tid);
 
 }
 
@@ -386,7 +363,7 @@ bool Graph::hasEdge(int src, int trg) {
 }
 
 // return vertex list of graph
-GRA& Graph::nodes() {
+GRA& Graph::vertexes() {
 	return this->graph;
 }
 
@@ -400,5 +377,5 @@ Graph& Graph::operator=(const Graph& g) {
 
 // get a specified vertex property
 Vertex& Graph::operator[](const int vid) {
-	return graph[vid].node;
+	return graph[vid].vertex;
 }

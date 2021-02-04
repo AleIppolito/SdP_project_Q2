@@ -7,7 +7,7 @@
 #define _BOX_H
 
 #include "Graph.h"
-#include <stdint.h>
+
 class Grail {
 	private:
 		Graph& g;

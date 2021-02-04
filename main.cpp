@@ -5,43 +5,18 @@
  */
 
 #include "Grail.h"
-// #include <csignal>
-// #include <stdlib.h>
-// #include <stdio.h>
-// #include <signal.h>
-// #include <cstring>
-// #include <thread>
 
-// bool BIDIRECTIONAL = true;
-// int LABELINGTYPE = 0;
-// bool debug = false;
 int DIM = 2;
 char* filename = NULL;
 char* testfilename = NULL;
 bool isquer = false;
 float labeling_time, query_time, query_timepart;
-int alg_type = 2;
 
 struct query{
 	int src;
 	int trg;
 	int labels;
 };
-
-/*
-void handle(int sig) {
- 	char const *alg_name;
-
-	switch(alg_type){
-		case 1: alg_name= "GRAIL";  break;
-		case 2: alg_name= "GRAILBI";  break;
-	}
-
-	cout << "COMPAR: " << alg_name << DIM << "\t" << labeling_time << "\t" << "TOut" << "\t" <<  endl;
-
-	exit(1);
-}
-*/
 
 static void usage() {		// here we must specify which search we want to implement - probably bidirectional
 	cout << "\nUsage:\n"
@@ -110,7 +85,11 @@ void read_graph(std::promise<Graph>& pgraph){
  */
 
 int main(int argc, char* argv[]) {
-	// signal(SIGALRM, handle);
+#if THREADS
+
+	ThreadPool pool(std::thread::hardware_concurrency());
+
+#endif
 	parse_args(argc,argv);
 	/*
 	 *	Read Graph from the input file AND prepare queries
@@ -151,6 +130,7 @@ int main(int argc, char* argv[]) {
 			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 	cout << "#graph read time: " << labeling_time << " (ms)" << endl;
 	cout << "#vertex size: " << g.num_vertices() << "\t#edges size: " << g.num_edges() << endl;
+
 	ofstream out("./out");
 	g.writeGraph(out);
 	/*
