@@ -11,7 +11,6 @@
 
 vector<int> _index;
 vector<double> customIndex;
-std::mutex label_lock;
 
 template<class T> struct index_cmp {
 	index_cmp(const T arr) : arr(arr) {}
@@ -27,43 +26,45 @@ template<class T> struct custom_cmp {
 	const T arr;
 };
 
-Grail::Grail(Graph& graph, int Dim, ThreadPool& p): g(graph), dim(Dim) { // @suppress("Class members should be properly initialized")
-	int8_t i;
-	int maxid = g.num_vertices();
+Grail::Grail(Graph& graph, int Dim 
+	#if THREADS 
+	,ThreadPool& pool
+	#endif
+	): g(graph), dim(Dim) { // @suppress("Class members should be properly initialized")
 	
+	int i;
+	int maxid = g.num_vertices();
 	for(i = 0 ; i<maxid; i++){
 		graph[i].labels.resize(dim);
-		//graph[i].middle = new int[dim];
 	}
-
-	int maxThread = std::thread::hardware_concurrency();
-	int nThreads = min(dim, maxThread);
 	for(i=0; i<dim; i++){
+		
 #if THREADS
-
-		//threadPool.emplace_back(std::thread(&randomlabeling, ref(graph), i));
+		pool.addJob(randomlabeling,std::ref(graph),i);
+		
+		//randomlabeling(graph,i);
 #else
 		randomlabeling(graph,i);
 #endif
-		cout << "Labeling " << i << " in progress" << endl;
 	}
 #if THREADS
+	pool.waitFinished();
 	/*for(auto &t : threadPool)
 		t.join();*/
 #endif
 
-	cout << "labelings completed" << endl;
 	// PositiveCut = NegativeCut = TotalCall = TotalDepth = CurrentDepth = 0;
 }
 
 Grail::~Grail() {
 }
 
-
+void Grail::setReachabilty(int n){
+	reachability.resize(n);
+}
 /******************************************************************
  * Labeling Functions
  ****************************************************************/
-
 
 // compute interval label for each node of tree (pre_order, post_order)
 void Grail::randomlabeling(Graph& tree, unsigned short int labelid) {
@@ -71,21 +72,21 @@ void Grail::randomlabeling(Graph& tree, unsigned short int labelid) {
 	std::vector<int>::iterator sit;
 	int pre_post = 0;
 	std::vector<bool> visited(tree.num_vertices(), false);
-	random_shuffle(roots.begin(),roots.end());
+	//random_shuffle(roots.begin(),roots.end());
 	for (sit = roots.begin(); sit != roots.end(); sit++) {
 		pre_post++;
 		visit(tree, *sit, pre_post, visited, labelid);
 	}
-}
+
+}	
 
 
 // traverse tree to label node with pre and post order by giving a start node
 int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited,
 		 		unsigned short int labelid) {
- 	//cout << "entering " << vid << "labelid" << endl;
 	visited[vid] = true;
 	EdgeList el = tree.out_edges(vid);
-	random_shuffle(el.begin(),el.end());
+	//random_shuffle(el.begin(),el.end());
 	EdgeList::iterator eit;
 	int pre_order = tree.num_vertices()+1;
 	//tree[vid].middle->push_back(pre_post);
@@ -97,8 +98,9 @@ int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited,
 		}
 	}
 	pre_order = min(pre_order, pre_post);
-	tree[vid].labels.at(labelid) = Label(pre_order,pre_post);
-	cout << "Copying vertes label " << vid << " " << tree[vid].getPre(labelid) << " " << tree[vid].getPost(labelid) << endl;
+	//labels.at(vid) = Label(pre_order,pre_post);
+	tree[vid].setLabel(pre_order,pre_post,labelid);
+	//cout << "Copying vertes label " << vid << " " << tree[vid].getPre(labelid) << " " << tree[vid].getPost(labelid) << endl;
 	pre_post++;
 	return pre_order;
 }
@@ -122,21 +124,26 @@ bool Grail::contains(int src,int trg){
 	return true;
 }
 
-bool Grail::bidirectionalReach(int src,int trg){
+void Grail::bidirectionalReach(int src,int trg, int query_id){
 	/*Check trivial cases first: 
 	* src == trg reachable 
 	* src has no children or trg has no parents then reachability is impossible
 	* src does not contain trg then it's not reachable
 	*/
-	if(src == trg )
-		return true;
-	if( !g.out_degree(src) || !g.in_degree(trg) || !contains(src,trg))
-		return false;
-	
+	if(src == trg ){
+		reachability[query_id] = 'r'; 
+		return;
+	}
 
+	if( !g.out_degree(src) || !g.in_degree(trg) || !contains(src,trg)){
+		reachability[query_id] = 'n';
+		return;
+	}
+
+	
 	std::queue<int> forward;
 	std::queue<int> backward;
-	std::vector<char> curvisit( g.num_vertices(), 'n');
+	std::vector<char> curvisit( g.num_vertices(), 'x');  
 
 	curvisit[src] = 'f';
 	forward.push(src);
@@ -146,6 +153,7 @@ bool Grail::bidirectionalReach(int src,int trg){
 	EdgeList el;
 	std::vector<int>::iterator ei;
 	char next;
+
 	while(!forward.empty() && !backward.empty()){
 		//LOOK DOWN
 		next = forward.front();
@@ -154,12 +162,13 @@ bool Grail::bidirectionalReach(int src,int trg){
 		//for each child of start node
 			for (ei = el.begin(); ei != el.end(); ei++){
 				if(curvisit[*ei]=='b'){
-					return true;
-				}else if(curvisit[*ei]!='f' && contains( *ei,trg ) ){
+					reachability[query_id] = 'r';
+					return;
+				}else if(curvisit[*ei]!='f' && contains(*ei,trg) ){
 					forward.push(*ei);
 					curvisit[*ei] = 'f';
 				}
-			}
+			} 
 		//LOOK UP
 		next = backward.front();
 		backward.pop();
@@ -167,7 +176,8 @@ bool Grail::bidirectionalReach(int src,int trg){
 
 			for (ei = el.begin(); ei != el.end(); ei++){
 				if(curvisit[*ei]=='f'){
-					return true;
+					reachability[query_id] = 'r';
+					return;
 				}else if(curvisit[*ei]!='b' && contains(src,*ei) ){
 					backward.push(*ei);
 					curvisit[*ei]='b';
@@ -175,6 +185,8 @@ bool Grail::bidirectionalReach(int src,int trg){
 			}
 
 	}
-	return false;
+
+	reachability[query_id] = 'f';
+	return;
 }
 
