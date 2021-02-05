@@ -22,8 +22,14 @@ Graph::Graph(GRA& g) {
 
 
 #if THREADS
+<<<<<<< Updated upstream
 	Graph::Graph(char* filename) {
 		readGraph2(filename);
+=======
+Graph::Graph(char* filename,ThreadPool& p) {
+	
+		readGraph(filename,p);
+>>>>>>> Stashed changes
 	}
 #else
 	Graph::Graph(char *filename) {
@@ -79,6 +85,7 @@ bool Graph::incrementalContains(int src,int trg,int cur){
 	return true;
 }
 
+<<<<<<< Updated upstream
 /*
 void Graph::strTrimRight(string& str) {
 	string whitespaces(" \t\r");
@@ -212,69 +219,38 @@ void Graph::readGraph2(char* filename) {
 		}*/
 }
 void Graph::readGraph(char *filename) {
+=======
+
+
+void Graph::readGraph(char *filename, ThreadPool& pool){
+	//ThreadPool pool(std::thread::hardware_concurrency());
+>>>>>>> Stashed changes
 	ifstream in(filename);
 	if (!in) {
 		cout << "Error: Cannot open " << filename << endl;
 		return ;
+	}
+	int n;
+	in >> n;
+	// initialize
+	vsize = n;
+	graph = GRA(n, Node());
+	int sid = 0;
+	int tid = 0;
+	char hash;
+	while (in >> sid >> hash >> std::ws) {
+		while (in.peek() != '#' && in >> tid >> std::ws) {
+			if(sid == tid)
+				cout << "Self-edge " << sid << endl;
+			if(tid < 0 || tid > n)
+				cout << "Wrong tid " << tid << endl;
+			addEdge(sid,tid);
+		}
+		in.ignore();
 	}
 	
-	int n;
-	in >> n;
-	// initialize
-	vsize = n;
-	graph = GRA(n, Node());
-	cout << n << endl;
-	int sid = 0;
-	int tid = 0;
-	char hash;
-	while (in >> sid >> hash) {
-		in >> std::ws;
-		while (in.peek() != '#' && in >> tid >> std::ws) {
-			if(sid == tid)
-				cout << "Self-edge " << sid << endl;
-			if(tid < 0 || tid > n)
-				cout << "Wrong tid " << tid << endl;
-			addEdge(sid, tid);
-		}
-		in.ignore();
-	}
+	
 }
-
-/*
-void Graph::readGraphQ(char * filename) {
-
-	ifstream in(filename);
-	if (!in) {
-		cout << "Error: Cannot open " << filename << endl;
-		return ;
-	}
-	ThreadPool pool(3);
-	pool.init();
-
-
-	int n;
-	in >> n;
-	// initialize
-	vsize = n;
-	graph = GRA(n, Node());
-	int sid = 0;
-	int tid = 0;
-	char hash;
-	while (in >> sid >> hash) {
-		in >> std::ws;
-		while (in.peek() != '#' && in >> tid >> std::ws) {
-			if(sid == tid)
-				cout << "Self-edge " << sid << endl;
-			if(tid < 0 || tid > n)
-				cout << "Wrong tid " << tid << endl;
-			pool.submit(std::bind(&Graph::addEdge,this),sid,tid);
-		}
-		in.ignore();
-	}
-
-	pool.shutdown();
-
-}*/
 
 void Graph::writeGraph(ostream& out) {
 	cout << "Graph size = " << graph.size() << endl;
@@ -310,11 +286,13 @@ void Graph::addVertex(int vid) {
 }
 
 void Graph::addEdge(int sid, int tid) {
-	if (sid >= graph.size())
-		addVertex(sid);
-	if (tid >= graph.size())
-		addVertex(tid);
+		
+	if (sid >= graph.size()){
+		addVertex(sid);}
+	if (tid >= graph.size()){
+		addVertex(tid);}
 	// update edge list
+<<<<<<< Updated upstream
 #if THREAD
 	std::lock_guard<std::mutex> guard(m);
 		graph[tid].inList.push_back(sid);
@@ -325,6 +303,11 @@ void Graph::addEdge(int sid, int tid) {
 		graph[sid].outList.push_back(tid);
 #endif
 
+=======
+	
+	graph[sid].outList.push_back(tid);
+	graph[tid].inList.push_back(sid);
+>>>>>>> Stashed changes
 }
 
 

@@ -14,6 +14,7 @@
 #include <future>
 #include <mutex>
 #include <queue>
+<<<<<<< Updated upstream
 #include <thread>
 #include <utility>
 #include <vector>
@@ -61,6 +62,43 @@ public:
 
   ThreadPool(const ThreadPool &) = delete;
   ThreadPool(ThreadPool &&) = delete;
+=======
+#include <sys/time.h>
+#include <algorithm>
+#include <functional>
+
+
+class ThreadPool {
+	public:
+		ThreadPool(unsigned int n);
+		~ThreadPool();
+		void waitFinished();
+		unsigned int getProcessed() const;
+		template<typename F, typename...A> void addJob(F&& f, A&&... a) {	// generic push function
+			try{
+				std::unique_lock<std::mutex> lock(queue_mutex);
+				auto wrapper = std::bind(&f, a...);
+				tasks.emplace_back(wrapper);
+				cv_task.notify_one();
+			}
+			catch(...) {
+				std::cout << "Errore during function submit" << std::endl;
+			}
+		}
+	private:
+		friend class Grail;
+		friend class Graph;
+		std::vector<std::thread> workers;
+		std::deque<std::function<void()>> tasks;
+		std::mutex queue_mutex;
+		std::condition_variable cv_task;
+		std::condition_variable cv_finished;
+		std::atomic_uint processed;
+		unsigned int busy;
+		bool stop;
+    	void thread_proc();
+};
+>>>>>>> Stashed changes
 
   ThreadPool & operator=(const ThreadPool &) = delete;
   ThreadPool & operator=(ThreadPool &&) = delete;

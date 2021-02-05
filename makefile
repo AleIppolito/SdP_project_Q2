@@ -1,5 +1,5 @@
 CC		= g++
-CPPFLAGS	= -Wno-deprecated -c -O3 -pthread -g
+CPPFLAGS	= -Wno-deprecated -c -O3 -pthread -g 
 LDFLAGS		= -O3  -pthread
 SOURCES		= main.cpp Graph.cpp Grail.cpp
 OBJECTS		= $(SOURCES:.cpp=.o)

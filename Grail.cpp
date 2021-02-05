@@ -111,6 +111,7 @@ GRAIL Query Functions
  * the exception
  */
 bool Grail::contains(int src,int trg){
+	
 	for(int i=0;i<dim;i++){
 			if(g[src].getPre(i) > g[trg].getPre(i)) {
 				return false;
@@ -128,10 +129,27 @@ bool Grail::bidirectionalReach(int src,int trg){
 	* src has no children or trg has no parents then reachability is impossible
 	* src does not contain trg then it's not reachable
 	*/
+<<<<<<< Updated upstream
 	if(src == trg )
 		return true;
 	if( !g.out_degree(src) || !g.in_degree(trg) || !contains(src,trg))
 		return false;
+=======
+	if(src < 0 || src > g.num_vertices() || trg < 0 || trg > g.num_vertices()){	
+		reachability[query_id] = 'n'; 
+		return;
+	}
+	if(src == trg ){
+		reachability[query_id] = 'r'; 
+		return;
+	}
+
+	if( !g.out_degree(src) || !g.in_degree(trg) || !contains(src,trg)){
+		reachability[query_id] = 'n';
+		return;
+	}
+
+>>>>>>> Stashed changes
 	
 
 	std::queue<int> forward;
