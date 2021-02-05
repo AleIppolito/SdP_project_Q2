@@ -5,7 +5,7 @@
 
 #ifndef _GRAPH_H
 #define _GRAPH_H
-#define THREADS false
+#define THREADS true
 #define DEBUG false
 #include <iostream>
 #include <fstream>
@@ -81,13 +81,8 @@ struct Node {
 	Node(int ID) : node(ID) { // @suppress("Class members should be properly initialized")
 		}
 	Node(Vertex v, EdgeList in, EdgeList out) :
-<<<<<<< Updated upstream
-			node(v) , inList(in), outList(out){
-				// @suppress("Class members should be properly initialized")
-=======
 			vertex(v) , inList(in), outList(out){
 					// @suppress("Class members should be properly initialized")
->>>>>>> Stashed changes
 		}
 	Node(){// @suppress("Class members should be properly initialized")
 		};
@@ -113,10 +108,6 @@ class Graph {
 		Graph();
 		Graph(int);
 		Graph(GRA&);
-<<<<<<< Updated upstream
-		Graph(char*);
-		Graph(istream&);
-=======
 #if THREADS
 		Graph(char*,ThreadPool &);
 		void readGraph(char*,ThreadPool&);
@@ -124,20 +115,9 @@ class Graph {
 		Graph(char*);
 		void readGraph(char*);
 #endif
->>>>>>> Stashed changes
 		~Graph();
 		bool contains(int src, int trg,int dim);
 		bool incrementalContains(int src, int trg, int cur);
-<<<<<<< Updated upstream
-
-		void innerRead(std::streampos start, std:: streampos end, char *filename, int n);
-		void innerRead2(string buf, int sid, int n);
-		void readGraph(char* filename);
-		void readGraph2(char* filename);
-		//void readGraphQ(char* filename);
-
-=======
->>>>>>> Stashed changes
 		void writeGraph(ostream&);
 		void printGraph();
 		void addEdges(int sid, std::vector<int> tidv);

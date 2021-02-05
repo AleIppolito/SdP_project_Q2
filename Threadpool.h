@@ -14,55 +14,6 @@
 #include <future>
 #include <mutex>
 #include <queue>
-<<<<<<< Updated upstream
-#include <thread>
-#include <utility>
-#include <vector>
-
-#include "SafeQueue.h"
-
-class ThreadPool {
-private:
-  class ThreadWorker {
-  private:
-    int m_id;
-    ThreadPool * m_pool;
-  public:
-    ThreadWorker(ThreadPool * pool, const int id)
-      : m_pool(pool), m_id(id) {
-    }
-
-    void operator()() {
-      std::function<void()> func;
-      bool dequeued;
-      while (!m_pool->m_shutdown) {
-        {
-          std::unique_lock<std::mutex> lock(m_pool->m_conditional_mutex);
-          if (m_pool->m_queue.empty()) {
-            m_pool->m_conditional_lock.wait(lock);
-          }
-          dequeued = m_pool->m_queue.dequeue(func);
-        }
-        if (dequeued) {
-          func();
-        }
-      }
-    }
-  };
-
-  bool m_shutdown;
-  SafeQueue<std::function<void()>> m_queue;
-  std::vector<std::thread> m_threads;
-  std::mutex m_conditional_mutex;
-  std::condition_variable m_conditional_lock;
-public:
-  ThreadPool(const int n_threads)
-    : m_threads(std::vector<std::thread>(n_threads)), m_shutdown(false) {
-  }
-
-  ThreadPool(const ThreadPool &) = delete;
-  ThreadPool(ThreadPool &&) = delete;
-=======
 #include <sys/time.h>
 #include <algorithm>
 #include <functional>
@@ -98,7 +49,6 @@ class ThreadPool {
 		bool stop;
     	void thread_proc();
 };
->>>>>>> Stashed changes
 
   ThreadPool & operator=(const ThreadPool &) = delete;
   ThreadPool & operator=(ThreadPool &&) = delete;

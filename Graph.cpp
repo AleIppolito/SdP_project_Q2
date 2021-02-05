@@ -22,14 +22,9 @@ Graph::Graph(GRA& g) {
 
 
 #if THREADS
-<<<<<<< Updated upstream
-	Graph::Graph(char* filename) {
-		readGraph2(filename);
-=======
 Graph::Graph(char* filename,ThreadPool& p) {
 	
 		readGraph(filename,p);
->>>>>>> Stashed changes
 	}
 #else
 	Graph::Graph(char *filename) {
@@ -85,7 +80,6 @@ bool Graph::incrementalContains(int src,int trg,int cur){
 	return true;
 }
 
-<<<<<<< Updated upstream
 /*
 void Graph::strTrimRight(string& str) {
 	string whitespaces(" \t\r");
@@ -219,12 +213,6 @@ void Graph::readGraph2(char* filename) {
 		}*/
 }
 void Graph::readGraph(char *filename) {
-=======
-
-
-void Graph::readGraph(char *filename, ThreadPool& pool){
-	//ThreadPool pool(std::thread::hardware_concurrency());
->>>>>>> Stashed changes
 	ifstream in(filename);
 	if (!in) {
 		cout << "Error: Cannot open " << filename << endl;
@@ -292,22 +280,9 @@ void Graph::addEdge(int sid, int tid) {
 	if (tid >= graph.size()){
 		addVertex(tid);}
 	// update edge list
-<<<<<<< Updated upstream
-#if THREAD
-	std::lock_guard<std::mutex> guard(m);
-		graph[tid].inList.push_back(sid);
-		graph[sid].outList.push_back(tid);
-#else
-
-		graph[tid].inList.push_back(sid);
-		graph[sid].outList.push_back(tid);
-#endif
-
-=======
 	
 	graph[sid].outList.push_back(tid);
 	graph[tid].inList.push_back(sid);
->>>>>>> Stashed changes
 }
 
 

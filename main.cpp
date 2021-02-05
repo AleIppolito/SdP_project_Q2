@@ -130,23 +130,16 @@ void read_graph(Graph& g, ThreadPool &p){
 }
 #endif
 
-<<<<<<< Updated upstream
-#if DEBUG
-void print_test(std::vector<query> queries) {
-	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
-=======
 void Wbidirectional(Grail &grail, int src, int trg, int query_id){
 	grail.bidirectionalReach(src,trg,query_id);
 }
 
 void print_query(ostream & out,Grail& grail, std::vector<query> queries){
 	int i = 0;
->>>>>>> Stashed changes
 	for (auto &q : queries) {
 		out << q.src << " " << q.trg << " " << grail.getReachability(i++) << endl;
 	}
 }
-<<<<<<< Updated upstream
 #endif
 
 #if THREADS
@@ -159,7 +152,6 @@ void read_graph(std::promise<Graph>& pgraph){
 	pgraph.set_value(g);
 }
 #endif
-=======
 void search_reachability(Grail& grail, std::vector<query> queries, ThreadPool &pool){
 	grail.setReachabilty(queries.size());
 	int i =0;
@@ -171,7 +163,6 @@ void search_reachability(Grail& grail, std::vector<query> queries, ThreadPool &p
 	pool.waitFinished();
 }
 // --------------------------------------------------------------------
->>>>>>> Stashed changes
 
 /*
  * **********************************
@@ -191,19 +182,6 @@ int main(int argc, char* argv[]) {
 	std::vector<query> queries;
 
 #if THREADS
-<<<<<<< Updated upstream
-	// Graph reading thread returns the graph as a promise
-	std::promise<Graph> pgraph;
-	std::future<Graph> fgraph = pgraph.get_future();
-	std::thread readGraphThread(read_graph,std::ref(pgraph));
-	std::thread testfileThread(&read_test, std::ref(queries));
-
-
-	// While the graph is running run a thread that reads the test file
-	Graph g = fgraph.get();
-	readGraphThread.join();
-	testfileThread.join();
-=======
 
 	Graph g;
 	pool.addJob(read_graph, std::ref(g), std::ref(pool));
@@ -211,7 +189,6 @@ int main(int argc, char* argv[]) {
 	pool.waitFinished();		// synch point
 	
 	//Graph g(filename);
->>>>>>> Stashed changes
 #else
 
 	Graph g(filename);
@@ -219,16 +196,8 @@ int main(int argc, char* argv[]) {
 	read_test(queries);
 
 #endif
-<<<<<<< Updated upstream
-
-	/*
-	 * Time check evaluation
-	 */
-
-=======
 	
 	// Time check evaluation
->>>>>>> Stashed changes
 	gettimeofday(&after_time, NULL);
 	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
 			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
@@ -236,16 +205,6 @@ int main(int argc, char* argv[]) {
 	cout << "#vertex size: " << g.num_vertices() << "\t#edges size: " << g.num_edges() << endl;
 	ofstream out("./out");
 	g.writeGraph(out);
-<<<<<<< Updated upstream
-	/*
-	 * Labeling happens here
-	 */
-	cout << "Starting GRAIL labeling... " << endl;
-	gettimeofday(&before_time, NULL);
-
-	Grail grail(g, DIM);
-
-=======
 
 #endif
 	// Labeling happens here
@@ -257,7 +216,6 @@ int main(int argc, char* argv[]) {
 #else
 	Grail grail(g, DIM);
 #endif
->>>>>>> Stashed changes
 	gettimeofday(&after_time, NULL);
 
 	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
