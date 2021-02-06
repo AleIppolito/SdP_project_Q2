@@ -17,8 +17,9 @@ Graph::Graph(GRA& g) {
 
 
 #if THREADS
-	Graph::Graph(char* filename, ThreadPool& pool) {
+Graph::Graph(char* filename,ThreadPool& p) {
 		readGraph(filename);
+		//readGraph(filename,p);
 	}
 #else
 	Graph::Graph(char *filename) {
@@ -58,201 +59,33 @@ bool Graph::incrementalContains(int src,int trg,int cur){
 		}
 	return true;
 }
-
-/*
-void Graph::strTrimRight(string& str) {
-	string whitespaces(" \t\r");
-	int index = str.find_last_not_of(whitespaces);
-	if (index != string::npos) 
-		str.erase(index+1);
-	else
-		str.clear();
-}
-
-void Graph::innerRead(std::streampos start, std::streampos end, char *filename, int n){
-
-	cout << "Start " <<start <<" "<< end<< endl;
-	std::ifstream in(filename);
-	if (!in) {
-				cout << "Error: Cannot open " << filename << endl;
-				return ;
-			}
-
-	in.seekg(start, std::ios::beg);
-
-	int sid = 0;
-	int tid=0;
-	char hash;
-	in >> std::ws;
-	while ( in.tellg() < end && in >> sid >> hash >> std::ws) {
-		while (in.peek() != '#' && in >> tid >> std::ws) {
-			if(sid == tid)
-				cout << "Self-edge " << sid << endl;
-			if(tid < 0 || tid > n)
-				cout << "Wrong tid " << tid << endl;
-
-			m.lock();
-			addEdge(sid, tid);
-			m.unlock();
-		}
-		in.ignore();
-	}
-}
-
-void Graph::readGraph2(char* filename) {
-	struct timeval before_time, after_time;
-	float labeling_time;
-	gettimeofday(&before_time, NULL);
-	int nThreads = std::thread::hardware_concurrency();
-	std::vector<std::streampos> thread_pos (nThreads+1);
-
-	std::ifstream in(filename);
-
-	if (!in) {
-		cout << "Error: Cannot open " << filename << endl;
-		return ;
-	}
-	//get file size
-	std::streampos fsize = in.tellg();
-	in.seekg(0, std::ios::end);
-	fsize = in.tellg() - fsize;
-	in.seekg(0, std::ios::beg);
-
-	int n;
-	in >> n;
-
-	std::streampos cur = thread_pos[0] = in.tellg();
-	gettimeofday(&after_time, NULL);
-	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
-				(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-		cout << "#filesize setup time: " << labeling_time << " (ms)" << endl;
-
-		gettimeofday(&before_time, NULL);
-	// initialize
-	vsize = n;
-	graph = GRA(n, Node());
-
-	for (int i=0; i<n; i++)
-		addVertex(i);
-	// Multithread read test 1
-
-	bool found = true;
-	int c;
-	int i;
-	for( i = 1; i < nThreads;i++){
-		cur += fsize/nThreads;
-		in.seekg(cur, std::ios::beg);
-		while(in.peek() != '#'){
-			in.ignore();
-			}
-		in.ignore();
-		thread_pos[i] = in.tellg();
-
-	}
-	thread_pos[nThreads] = fsize;
-	std::vector<std::thread> workers;
-	gettimeofday(&after_time, NULL);
-		labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
-					(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-
-		cout << "#Chunck search time: " << labeling_time << " (ms)" << endl;
-		gettimeofday(&before_time, NULL);
-	for(i=0;i<nThreads;i++){
-			workers.emplace_back(std::thread(&Graph::innerRead,this,thread_pos[i], thread_pos[i+1], filename,n));
-		}
-
-	for(auto &w : workers){
-			w.join();
-	}
-	gettimeofday(&after_time, NULL);
-		labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
-					(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-
-		cout << "#Actual work time: " << labeling_time << " (ms)" << endl;
-	// Multithread read test 2
-
-	string buf;
-	std::vector<std::thread> workers;
-		int i;
-		int sid = 0;
-		char col;
-		while (in.peek() != EOF ) {
-			for( i = 0 ; i < nThreads; i++){
-				cout << "entering " << i << " thread" << endl;
-				sid = getSrcData(in,buf);
-				workers.emplace_back(std::thread(&Graph::innerRead2,this,buf,sid,n));
-				}
-		}
-		for(auto &w : workers){
-					w.join();
-		}
-}
-*/
-
 void Graph::readGraph(char *filename) {
 	ifstream in(filename);
 	if (!in) {
 		cout << "Error: Cannot open " << filename << endl;
 		return ;
 	}
+	int n;
+	in >> n;
+	// initialize
+	vsize = n;
+	graph = GRA(n, Node());
+	int sid = 0;
+	int tid = 0;
+	char hash;
+	while (in >> sid >> hash >> std::ws) {
+		while (in.peek() != '#' && in >> tid >> std::ws) {
+			if(sid == tid)
+				cout << "Self-edge " << sid << endl;
+			if(tid < 0 || tid > n)
+				cout << "Wrong tid " << tid << endl;
+			addEdge(sid,tid);
+		}
+		in.ignore();
+	}
 	
-	int n;
-	in >> n;
-	// initialize
-	vsize = n;
-	graph = GRA(n, Node());
-	cout << n << endl;
-	int sid = 0;
-	int tid = 0;
-	char hash;
-	while (in >> sid >> hash) {
-		in >> std::ws;
-		while (in.peek() != '#' && in >> tid >> std::ws) {
-			if(sid == tid)
-				cout << "Self-edge " << sid << endl;
-			if(tid < 0 || tid > n)
-				cout << "Wrong tid " << tid << endl;
-			addEdge(sid, tid);
-		}
-		in.ignore();
-	}
+	
 }
-
-/*
-void Graph::readGraphQ(char * filename) {
-
-	ifstream in(filename);
-	if (!in) {
-		cout << "Error: Cannot open " << filename << endl;
-		return ;
-	}
-	ThreadPool pool(3);
-	pool.init();
-
-
-	int n;
-	in >> n;
-	// initialize
-	vsize = n;
-	graph = GRA(n, Node());
-	int sid = 0;
-	int tid = 0;
-	char hash;
-	while (in >> sid >> hash) {
-		in >> std::ws;
-		while (in.peek() != '#' && in >> tid >> std::ws) {
-			if(sid == tid)
-				cout << "Self-edge " << sid << endl;
-			if(tid < 0 || tid > n)
-				cout << "Wrong tid " << tid << endl;
-			pool.submit(std::bind(&Graph::addEdge,this),sid,tid);
-		}
-		in.ignore();
-	}
-
-	pool.shutdown();
-
-}*/
 
 void Graph::writeGraph(ostream& out) {
 	cout << "Graph size = " << graph.size() << endl;
@@ -288,14 +121,15 @@ void Graph::addVertex(int vid) {
 }
 
 void Graph::addEdge(int sid, int tid) {
-	if (sid >= graph.size())
-		addVertex(sid);
-	if (tid >= graph.size())
-		addVertex(tid);
+		
+	if (sid >= graph.size()){
+		addVertex(sid);}
+	if (tid >= graph.size()){
+		addVertex(tid);}
 	// update edge list
-	graph[tid].inList.push_back(sid);
+	
 	graph[sid].outList.push_back(tid);
-
+	graph[tid].inList.push_back(sid);
 }
 
 

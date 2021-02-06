@@ -139,6 +139,7 @@ void Grail::bidirectionalReach(int src,int trg, int query_id){
 		reachability[query_id] = 'n';
 		return;
 	}
+	
 
 	
 	std::queue<int> forward;
