@@ -96,26 +96,27 @@ void read_graph(Graph& g, ThreadPool &p){
 void print_test(std::vector<query> queries) {
 	ofstream outfile("../../project_generator/graphGenerator-StQ/outfile.que");
 
-void Wbidirectional(Grail &grail, int src, int trg, int query_id){
-	grail.bidirectionalReach(src,trg,query_id);
-}
 
-void print_query(ostream & out,Grail& grail, std::vector<query> queries){
+
+
+
+#endif
+void print_query(ostream & out,Grail& grail, std::vector<query>& queries){
 	int i = 0;
-
+	cout << "Queries solution : " << endl;
 	for (auto &q : queries) {
 		out << q.src << " " << q.trg << " " << grail.getReachability(i++) << endl;
 	}
 }
-
-#endif
+void Wbidirectional(Grail &grail, int src, int trg, int query_id){
+	grail.bidirectionalReach(src,trg,query_id);
+}
 void search_reachability(Grail& grail, std::vector<query> queries, ThreadPool &pool){
 	grail.setReachabilty(queries.size());
 	int i =0;
 	for (auto &q : queries) {
 		pool.addJob(Wbidirectional, std::ref(grail),q.src, q.trg, i);
 		i++;
-		usleep(500);
 	}
 	pool.waitFinished();
 }
@@ -197,13 +198,14 @@ int main(int argc, char* argv[]) {
 	/*
 	 * Here we use auto, but let's just make sure Savino likes this, otherwise we'll use a vector iterator
 	 */
-	search_reachability(std::ref(grail), queries, std::ref(pool));
+	search_reachability(std::ref(grail),std::ref(queries), std::ref(pool));
 
 	gettimeofday(&after_time, NULL);
 	query_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 + 
 		(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 	cout << "#total query running time: " << query_time << " (ms)" << endl;
-	//print_query(cout,grail,queries);
+	ofstream queryout("./query");
+	print_query(queryout,grail,queries);
 	cout.setf(ios::fixed);		
 	cout.precision(2);
 	cout << "GRAIL REPORT " << endl;

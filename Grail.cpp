@@ -98,7 +98,6 @@ int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited,
 		}
 	}
 	pre_order = min(pre_order, pre_post);
-	//labels.at(vid) = Label(pre_order,pre_post);
 	tree[vid].setLabel(pre_order,pre_post,labelid);
 	//cout << "Copying vertes label " << vid << " " << tree[vid].getPre(labelid) << " " << tree[vid].getPost(labelid) << endl;
 	pre_post++;
@@ -113,7 +112,7 @@ GRAIL Query Functions
  * the exception
  */
 bool Grail::contains(int src,int trg){
-	for(int i=0;i<dim;i++){
+	for(int i=0;i<dim;i++){		
 			if(g[src].getPre(i) > g[trg].getPre(i)) {
 				return false;
 			}
@@ -130,31 +129,35 @@ void Grail::bidirectionalReach(int src,int trg, int query_id){
 	* src has no children or trg has no parents then reachability is impossible
 	* src does not contain trg then it's not reachable
 	*/
+
 	if(src == trg ){
 		reachability[query_id] = 'r'; 
 		return;
 	}
-
+	
 	if( !g.out_degree(src) || !g.in_degree(trg) || !contains(src,trg)){
 		reachability[query_id] = 'n';
 		return;
 	}
 	
-
+	
+	
 	
 	std::queue<int> forward;
 	std::queue<int> backward;
 	std::vector<char> curvisit( g.num_vertices(), 'x');  
 
+	
+	
 	curvisit[src] = 'f';
 	forward.push(src);
 	curvisit[trg] = 'b';
 	backward.push(trg);
-
+	//cout << "Entering :" << curvisit.size() << " " << src << " " << trg << endl;
 	EdgeList el;
 	std::vector<int>::iterator ei;
-	char next;
-
+	int next;
+	
 	while(!forward.empty() && !backward.empty()){
 		//LOOK DOWN
 		next = forward.front();

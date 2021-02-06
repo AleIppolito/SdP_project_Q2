@@ -7,18 +7,16 @@
 
 Graph::Graph() {
 	graph = GRA();
-	vsize = 0;
 }
 
 Graph::Graph(GRA& g) {
-	vsize = g.size();
 	graph = g;
 }
 
 
 #if THREADS
 Graph::Graph(char* filename,ThreadPool& p) {
-		readGraph(filename);
+		readGraph(filename,p);
 		//readGraph(filename,p);
 	}
 #else
@@ -34,16 +32,15 @@ void Graph::printGraph() {
 }
 
 void Graph::clear() {
-	vsize = 0;
 	graph.clear();
 }
 
 bool Graph::contains(int src,int trg,int dim){
 	int i;
 	for(i=0; i<dim; i++){ 
-			if(graph[src].vertex.getPre(i) > graph[trg].vertex.getPre(i))
+			if(graph[src].getPre(i) > graph[trg].getPre(i))
 				return false;
-			if(graph[src].vertex.getPost(i) < graph[trg].vertex.getPost(i))
+			if(graph[src].getPost(i) < graph[trg].getPost(i))
 				return false;
 		}
 	return true;
@@ -52,14 +49,14 @@ bool Graph::contains(int src,int trg,int dim){
 bool Graph::incrementalContains(int src,int trg,int cur){
 	int i;
 	for(i=0; i<cur; i++){
-			if(graph[src].vertex.getPre(i) > graph[trg].vertex.getPre(i))
+			if(graph[src].getPre(i) > graph[trg].getPre(i))
 				return false;
-			if(graph[src].vertex.getPost(i) < graph[trg].vertex.getPost(i))
+			if(graph[src].getPost(i) < graph[trg].getPost(i))
 				return false;
 		}
 	return true;
 }
-void Graph::readGraph(char *filename) {
+void Graph::readGraph(char *filename, ThreadPool & p) {
 	ifstream in(filename);
 	if (!in) {
 		cout << "Error: Cannot open " << filename << endl;
@@ -68,7 +65,6 @@ void Graph::readGraph(char *filename) {
 	int n;
 	in >> n;
 	// initialize
-	vsize = n;
 	graph = GRA(n, Node());
 	int sid = 0;
 	int tid = 0;
@@ -108,16 +104,11 @@ void Graph::addVertex(int vid) {
 	if (vid >= graph.size()) {
 		int size = graph.size();
 		for (int i = 0; i < (vid-size+1); i++) {
-			graph.push_back(Node(vid+i));
+			graph.push_back(Node());
 		}
-		vsize = graph.size();
 	}
 
-	Vertex v;
-	v.id = vid;
-	cout << "Entering vertex : " << v.id << endl;
-	v.top_level = -1;
-	graph[vid] = Node(v,EdgeList(),EdgeList());
+	graph[vid] = Node(EdgeList(),EdgeList());
 }
 
 void Graph::addEdge(int sid, int tid) {
@@ -134,7 +125,7 @@ void Graph::addEdge(int sid, int tid) {
 
 
 int Graph::num_vertices() {
-	return vsize;
+	return graph.size();
 }
 
 int Graph::num_edges() {
@@ -198,12 +189,10 @@ GRA& Graph::vertexes() {
 Graph& Graph::operator=(const Graph& g) {
 	if (this != &g) {
 		graph = g.graph;
-		vsize = g.vsize;
 	}
 	return *this;
 }
 
-// get a specified vertex property
-Vertex& Graph::operator[](const int vid) {
-	return graph[vid].vertex;
+Node& Graph::operator[](const int i){
+	return graph[i];
 }

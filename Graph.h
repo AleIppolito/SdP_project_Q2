@@ -27,21 +27,18 @@ struct Label{
 	Label(){
 	};
 };
-struct Vertex {
-	int id;
-	int top_level;			// topological level
-	int min_int;
+
+struct Node {
 	std::vector<Label> labels;
-	Vertex(int ID) : id(ID) { // @suppress("Class members should be properly initialized")
-		top_level = -1;
-	}
-	Vertex(){ // @suppress("Class members should be properly initialized")
-		top_level = -1;
-	};
-	int getid(){
-		return id;
-	}
-	Label getLabel(int labelid){
+	EdgeList inList;
+	EdgeList outList;
+	Node(EdgeList in, EdgeList out) :
+			inList(in), outList(out){
+					// @suppress("Class members should be properly initialized")
+		}
+	Node(){// @suppress("Class members should be properly initialized")
+		};
+		Label getLabel(int labelid){
 		return labels[labelid];
 	}
 	int getPost(int labelid){
@@ -54,26 +51,7 @@ struct Vertex {
 		labels[id] = Label(pre,post);
 	}
 };
-struct Node {
-	Vertex vertex;
-	EdgeList inList;
-	EdgeList outList;
-	Node(int ID) : vertex(ID) { // @suppress("Class members should be properly initialized")
-		}
-	Node(Vertex v, EdgeList in, EdgeList out) :
-			vertex(v) , inList(in), outList(out){
-					// @suppress("Class members should be properly initialized")
-		}
-	Node(){// @suppress("Class members should be properly initialized")
-		};
-};
 
-
-struct VertexCompare {
-  bool operator() (const Vertex p1, const Vertex p2) const {
-    return p1.id < p2.id;
-  }
-};
 
 
 typedef std::vector<Node> GRA;	// index graph
@@ -82,7 +60,6 @@ typedef std::vector<Node> GRA;	// index graph
 class Graph {
 	private:
 		GRA graph;
-		int vsize;
 	public:
 		Graph();
 		Graph(GRA&);
@@ -112,7 +89,7 @@ class Graph {
 		std::vector<int> getRoots();
 		bool hasEdge(int, int);	
 		Graph& operator=(const Graph&);
-		Vertex& operator[](const int);
+		Node& operator[](const int);
 		void clear();
 };	
 
