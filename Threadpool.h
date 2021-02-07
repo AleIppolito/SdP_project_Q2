@@ -18,22 +18,25 @@
 #include <queue>
 #include <sys/time.h>
 #include <algorithm>
+#include <string>
+
+#define GRAPH true
+#define THREADS true
+#define DEBUG false
 
 class ThreadPool {
 	public:
+		ThreadPool();
 		ThreadPool(unsigned int n);
 		~ThreadPool();
 		void waitFinished();
 		unsigned int getProcessed() const;
 		template<typename F, typename...A> void addJob(F&& f, A&&... a) {	// generic push function
 			std::unique_lock<std::mutex> lock(queue_mutex);
-			auto wrapper = std::bind(&f, a...);
-			tasks.emplace_back(wrapper);
+			tasks.emplace_back(std::bind(&f, a...));
 			cv_task.notify_one();
 		}
 	private:
-		friend class Grail;
-		friend class Graph;
 		std::vector<std::thread> workers;
 		std::deque<std::function<void()>> tasks;
 		std::mutex queue_mutex;

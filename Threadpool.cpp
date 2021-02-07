@@ -5,19 +5,21 @@
 
 #include "Threadpool.h"
 
+ThreadPool::ThreadPool() {
+	for(unsigned int i=0; i<std::thread::hardware_concurrency(); ++i)
+			workers.emplace_back(std::bind(&ThreadPool::thread_proc, this));
+}
+
 ThreadPool::ThreadPool(unsigned int n) : busy(), processed(), stop() {
 	for(unsigned int i=0; i<n; ++i)
 		workers.emplace_back(std::bind(&ThreadPool::thread_proc, this));
 }
 
 ThreadPool::~ThreadPool() {
-	// set stop-condition
 	std::unique_lock<std::mutex> latch(queue_mutex);
 	stop = true;
 	cv_task.notify_all();
     latch.unlock();
-
-    // all threads terminate, then we're done.
     for (auto &t : workers)
         t.join();
 }
@@ -25,6 +27,7 @@ ThreadPool::~ThreadPool() {
 // waits until the queue is empty.
 void ThreadPool::waitFinished() {
     std::unique_lock<std::mutex> lock(queue_mutex);
+    std::cout << "thread " << std::this_thread::get_id() << " going to sleep" << std::endl;
     cv_finished.wait(lock, [this](){return tasks.empty() && (busy == 0);});
 }
 
@@ -39,6 +42,8 @@ void ThreadPool::thread_proc() {
     	if (!tasks.empty()) {
     		++busy;
             auto fn = tasks.front();
+            std::cout << "thread " << std::this_thread::get_id()
+            		<< " working on ";
             tasks.pop_front();
             latch.unlock();
             fn();
