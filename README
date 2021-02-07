@@ -25,11 +25,11 @@ To run with instructions:
 ./grail -h
 
 Usage:
- grail [-h] <filename> dim <testfilename>
+ grail [-h] <filename> [dim] <testfilename>
 Description:
-  -h              Print this help message.
+  -h              Optional, print this help message.
   <filename>      The name of the input graph in gra format.
-  dim             Set the number of traversals to be performed. The default value is 2.
+  dim             Optional, set the number of traversals to be performed. The default value is 2.
   Algorithm type: Bidirectional Search.
   Labeling type:  Completely randomized traversals.  
                       
@@ -48,4 +48,5 @@ Selection of Dimensionality:
 For sparse graphs (avg. degree up to 3): dim 2 is quite optimal.
 For denser graphs, you can increase it up to 5.
 
-The program reports the success rate, construction time and query time.
+The program reports the construction time, labeling time and query time.
+If testfilename contains ground truth, also success rate is printed.
