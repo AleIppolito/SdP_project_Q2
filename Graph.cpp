@@ -4,7 +4,8 @@
  */
 
 #include "Graph.h"
-
+#include <regex>
+std::mutex m;
 Graph::Graph() {graph = GRA();} // @suppress("Class members should be properly initialized")
 
 Graph::Graph(GRA& g) {graph = g;} // @suppress("Class members should be properly initialized")
@@ -25,7 +26,7 @@ void Graph::readGraph(const string &file) {
 	char hash;
 	in >> n;
 	graph = GRA(n, Node());
-
+	
 	while(in >> sid  >> hash >> std::ws) {
 		while(in.peek() != '#' && in >> tid >> std::ws)
 			addEdge(sid, tid);
@@ -50,6 +51,8 @@ void Graph::addVertex(const int &vid) {
 	}
 	graph[vid] = Node(EdgeList(),EdgeList());
 }
+
+
 
 bool Graph::contains(const int &src, const int &trg, const int &dim) {
 	for(int i=0; i<dim; i++) {

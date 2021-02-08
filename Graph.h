@@ -36,6 +36,7 @@ typedef std::vector<Node> GRA;	// index graph
 
 class Graph {
 	private:
+		int dim;
 		GRA graph;
 	public:
 		Graph();
@@ -47,6 +48,7 @@ class Graph {
 		void addEdge(const int&, const int&);
 		void addVertex(const int&);
 
+		
 		bool contains(const int&, const int&, const int&);
 		void writeGraph(ostream&);
 		int num_vertices() const;

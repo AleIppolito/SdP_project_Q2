@@ -1,20 +1,27 @@
-
-/*
- * Copyright (c) Hilmi Yildirim 2010,2011.
- * Changes made on his code, available on Git
+/**
+ * @file main.cpp
+ * @author Federico Maresca Alessando Ippolito
+ * @brief 
+ * @version 1
+ * @date 2021-02-07
+ * 
+ * @copyright Copyright (c) 2021
+ * 
  */
 
 #include "Grail.h"
 
+#include <chrono>
+
 bool isquer = false;
 float graph_time, labeling_time, query_time;
-
 struct query{
 	int src;
 	int trg;
 	int labels;
 };
-
+std::vector<char> reachability;
+std::mutex rm;
 static void usage() {		// here we must specify which search we want to implement - probably bidirectional
 	cout << "Usage:\n"
 			"./grail [-h] <filename> [<DIM>]  <testfilename>\n"
@@ -26,7 +33,20 @@ static void usage() {		// here we must specify which search we want to implement
 			"- testfilename\t\tContains the queries to execute." << endl;
 }
 
-static void parse_args(int argc, char *argv[], string &fname, string &tfname, int &dim) {
+/**
+ * @brief Standard parser for command line arguments
+ * 
+ * @param argc 
+ * @param argv 
+ * @param fname GRAPH_FILENAME This file should contain a graph with the following structure:
+ *  n ->number of vertexes
+ *  src : trg1 trg2 trg3 ... #
+ *  src : trg1 trg2 trg3 ... # 
+ * @param tfname TEST_FILENAME This file should contain a series of queries with the following structure:
+ *  src trg \n src1 trg1 \n ...
+ * @param dim #TRAVERSALS This value is the amount of labels or traversals that the Grail should construct 
+ */
+static void parse_args(int argc, char *argv[], std::string &fname, std::string &tfname, int &dim) {
 	if (argc < 3) {	// minimum is ./grail <filename> <testfilename>
 		usage();
 		exit(0);
@@ -39,11 +59,14 @@ static void parse_args(int argc, char *argv[], string &fname, string &tfname, in
  		tfname = argv[2];
 }
 
-// Read testfilename and prepare queries vector
-void read_test(const string &tfname, std::vector<query> &q) {
-#if DEBUG
-	cout << __func__ << endl;
-#endif
+/**
+ * @brief This function reads TEST_FILENAME and saves the queries in a std::vector of queries, a struct
+ * that contains 2 integers (src,trg)
+ * 
+ * @param tfname TEST_FILENAME
+ * @param q Query vector
+ */
+void read_test(const std::string &tfname, std::vector<query> &q) {
 	int s,t,label=0;
 	ifstream fstr(tfname);
 	if (!fstr) {
@@ -58,60 +81,112 @@ void read_test(const string &tfname, std::vector<query> &q) {
 			q.push_back({s, t, label});
 }
 
-void read_graph(const string &fname, Graph &gr) {
+/**
+ * @brief READS THE GRAPH AND STORES IT INTO THE GRAPH OBJECT
+ * This wrapper function allows the threadpool to compute a non-static member function by passing its 
+ * Object class as a parameter. 
+ * 
+ * @param fname GRAPH_FILENAME
+ * @param gr Graph Object
+ */
+void read_graph(const std::string &fname, Graph &gr) {
 #if DEBUG
 	cout << __func__ << endl;
 #endif
 	gr.readGraph(fname);
 }
 
-void print_query(ostream & out,Grail& grail, std::vector<query>& queries) {
+/**
+ * @brief Debugging function, prints the queries 
+ * 
+ * @param out ostream object as ouput
+ * @param grail Grail object that contains the reachability result
+ * @param queries queries std::vector of query struct 
+ */
+void print_query(ostream & out, Grail& grail, std::vector<query>& queries) {
 	int i = 0;
 	cout << "Queries solution : " << endl;
-	for (auto &q : queries)
-		out << q.src << " " << q.trg << " " << grail.getReachability(i++) << endl;
-}
-
-void Wbidirectional(Grail &grail, int src, int trg, int query_id) {
-	grail.bidirectionalReach(src,trg,query_id);
-}
-
-void search_reachability(Grail& grail, const std::vector<query> &queries, ThreadPool &pool){
-	grail.setReachabilty(queries.size());
-	int i =0;
-	for (auto &q : queries) {
-		pool.addJob(Wbidirectional, std::ref(grail),q.src, q.trg, i);
+	for (auto &q : queries){
+		out << q.src << " " << q.trg << " " << reachability[i] << endl;
 		i++;
+	}
+}
+
+/**
+ * @brief READS THE GRAIL AND STORES IT INTO THE GRAIL OBJECT 
+ * This wrapper function allows the threadpool to compute a non-static member function by passing its 
+ * Object class as a parameter.
+ * 
+ * @param grail Grail object
+ * @param src 
+ * @param trg 
+ * @param query_id Query number to access the std::vector of reachability results
+ */
+void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, int end) {
+	std::vector<char> localreach;
+	std::vector<int> visited(grail.getGraph().num_vertices());
+	for (int i = start;i < end; i++) {
+		reachability[i] = grail.bidirectionalReach(queries[i].src,queries[i].trg,i,std::ref(visited));		
+	}	
+}
+
+
+/**
+ * @brief This wrapper function handles iteration over all of the queries. Each label is checked through 
+ * bidirecitonalReach in Grail.cpp  
+ * 
+ * @param grail Grail object
+ * @param queries Query vector with all queries from TEST_FILENAME
+ * @param pool Threadpool reference used to launch each query search
+ */
+void search_reachability(Grail& grail, const std::vector<query> &queries, ThreadPool &pool){
+	//grail.setReachabilty(queries.size());
+	reachability.resize(queries.size());
+	int begin = 0;
+	int chunk = 90000;
+	while(begin < queries.size()) {
+		pool.addJob(Wbidirectional, std::ref(grail),std::ref(queries),begin,begin+chunk);
+		begin +=chunk;
+		chunk = (begin+chunk < queries.size()) ? chunk : queries.size()-begin;
 	}
 	pool.waitFinished();
 }
 // --------------------------------------------------------------------
 
-int main(int argc, char* argv[]) {
-	string filename, testfilename;
-	int DIM = 2;
-	parse_args(argc, argv, filename, testfilename, DIM);
-#if THREADS
-	ThreadPool pool;	// standard constructor, based on std::thread::hardware_concurrency()
-#endif
-	// Read Graph from the input file AND prepare queries
-	std::vector<query> queries;
-	srand48(time(NULL));	// random init
-	struct timeval before_time, after_time;
-	cout << "processing input files..." << endl;
-	gettimeofday(&before_time, NULL);
+/* GRAIL WITH CONCURRENT IMPLEMENTATION 
+* A threadpool is ran at the start of the execution with a pool size of std::thread::hardware_concurrency()
+* we then use a parse_function to read the input and save it into local variables, all following functions are run by 
+* pushing the functions into a task queue from which the threads pop it and runs it. 
+* Chrono library is used to check on execution time.
+* 
+*/
 
-#if THREADS
-	pool.addJob(read_test, std::ref(testfilename), std::ref(queries));
+
+int main(int argc, char* argv[]) {
+	
+	auto program_start= std::chrono::high_resolution_clock::now();
+
+	std::string filename, testfilename;
+	int DIM = 2;
+	
+	std::vector<query> queries;
+	parse_args(argc, argv, filename, testfilename, DIM);
+	ThreadPool pool;	
+
+	/**
+	 * @brief FILE INPUT READING happens concurrently for both files
+	 */
+	cout << "Reading input..." << endl;
+
+	auto start_read= std::chrono::high_resolution_clock::now();
+	
 	Graph g;
 	pool.addJob(read_graph, std::ref(filename), std::ref(g));
+	pool.addJob(read_test, std::ref(testfilename), std::ref(queries));
 	pool.waitFinished();
-#else	// no THREADS
-	read_test(testfilename, queries);
-	Graph g;
-	read_graph(filename, g);
-#endif
-	gettimeofday(&after_time, NULL);
+	
+	auto end_read = std::chrono::high_resolution_clock::now();
+
 #if DEBUG
 	ofstream qout("./queries");
 	cout << "print_queries_and_nodes" << endl;
@@ -122,44 +197,62 @@ int main(int argc, char* argv[]) {
 	ofstream gout("./graph");
 	g.writeGraph(gout);
 #endif
-	// Time check evaluation
-	graph_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
-			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-	cout << "#input files read time: " << graph_time << " (ms)" << endl;
-	cout << "#graph vertexes: " << g.num_vertices() << "\t#graph edges: " << g.num_edges() << endl;
 
-	// Labeling happens here
-	cout << "\nstarting GRAIL labeling..." << endl;
-	gettimeofday(&before_time, NULL);
-#if THREADS
+	
+
+	/**
+	 * @brief GRAIL CONSTRUCTION, each traversal happens on a different thread
+	 * 
+	 */
+	cout << "Label construction..." << endl;
+	
+	auto start_label = std::chrono::high_resolution_clock::now();
+
 	Grail grail(std::ref(g), DIM, pool);
-#else
-	Grail grail(std::ref(g), DIM);
-#endif
-	gettimeofday(&after_time, NULL);
 
-	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 +
-			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-	cout << "#GRAIL construction time: " << labeling_time << " (ms)" << endl;
+	auto end_label = std::chrono::high_resolution_clock::now();
 
-	// Query processing happens here
 
-	cout << "\nstarting reachability testing..." << endl;
-	gettimeofday(&before_time, NULL);
+	/**
+	 * @brief QUERY CONSTRUCTION each query check happens on a differnt thread
+	 * 
+	 */
+
+	cout << "Query testing..." << endl;
+
+	auto start_query = std::chrono::high_resolution_clock::now();
 
 	search_reachability(std::ref(grail),std::ref(queries), std::ref(pool));
+	
+	auto end_query = std::chrono::high_resolution_clock::now();
 
-	gettimeofday(&after_time, NULL);
-	query_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 + 
-		(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
-	cout << "#total query running time: " << query_time << " (ms)" << endl;
-	//ofstream queryout("./query");
-	//print_query(queryout,grail,queries);
+	unsigned int size = g.num_vertices();
+	unsigned int edges = g.num_edges();
+	//g.clear();
+	std::chrono::duration<double, std::milli> read_time = end_read - start_read;
+	std::chrono::duration<double, std::milli> label_time = end_label - start_label;
+	std::chrono::duration<double, std::milli> query_time = end_query - start_query;
+	auto program_time = read_time + label_time + query_time;
+	
+
+	/**
+	 * @brief Take file names from file path then used at line 233
+	 */
+  	std::size_t gn = filename.find_last_of("/\\");
+	std::size_t tn = testfilename.find_last_of("/\\");
 	cout.setf(ios::fixed);		
-	cout.precision(2);
-	cout << "GRAIL REPORT " << endl;
-	cout << "filename: " << filename << " testfilename: " << testfilename << " traversals: " << DIM << endl;
-	cout << "graph construction = " << graph_time << "\nlabeling time = " << labeling_time  << "\nquery time = "
-			<< query_time << endl;// << "\nindex_size = " << g.num_vertices()*DIM*2  << endl;
-	//cout << "all done\n\nSuccess Rate " << success << "/" << success+fail << endl;
+	cout.precision(3);
+	cout << "\n__________________________________________________\n" << endl;
+	cout << "GRAIL FILE DATA " << endl;
+	cout << "||Graph file: " << filename.substr(gn+1) << "||\n||Test file: " << testfilename.substr(tn+1) << "||Traversals : " << DIM << endl;
+	cout << "Graph has: \nVertexes: " << size << "\tEdges: " << edges << "\tQUERIES: " << queries.size() << endl;
+	cout << "\n#-------------------------#\n" << endl;
+	cout << "GRAIL TIME REPORT: " << endl;
+	cout << "-Files Read= " << read_time.count() << " ms \n-Labeling time = " << label_time.count()  << " ms \n-Query time = " << query_time.count() << " ms\n-TOTAL TIME = "  << program_time.count() << " ms " << endl;
+	cout << "\n__________________________________________________\n\n" << endl;
+	
+	//#if DEBUG
+	ofstream out("./queriesour.txt");
+	print_query(out, grail, queries);
+	//#endif
 }
