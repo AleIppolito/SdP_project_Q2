@@ -3,8 +3,8 @@
  * Also divided in .h and .cpp
  */
 
-#ifndef _THREADPOOL_H
-#define _THREADPOOL_H
+#ifndef THREADPOOL_H_
+#define THREADPOOL_H_
 
 #include <iostream>
 #include <deque>
@@ -16,10 +16,9 @@
 #include <fstream>
 #include <vector>
 #include <queue>
-#include <sys/time.h>
 #include <string>
 #include <algorithm>
-#include <sstream>
+#include <chrono>
 
 #define THREADS true
 #define DEBUG false
@@ -48,4 +47,4 @@ class ThreadPool {
     	void thread_proc();
 };
 
-#endif // _THREADPOOL_H
+#endif /* _THREADPOOL_H */

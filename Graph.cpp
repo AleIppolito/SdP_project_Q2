@@ -4,8 +4,7 @@
  */
 
 #include "Graph.h"
-#include <regex>
-std::mutex m;
+
 Graph::Graph() {graph = GRA();} // @suppress("Class members should be properly initialized")
 
 Graph::Graph(GRA& g) {graph = g;} // @suppress("Class members should be properly initialized")

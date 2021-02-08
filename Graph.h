@@ -3,8 +3,8 @@
  * Changes made on his code, available on Git
  */
 
-#ifndef _GRAPH_H
-#define _GRAPH_H
+#ifndef GRAPH_H_
+#define GRAPH_H_
 
 #include "Threadpool.h"
 
@@ -66,35 +66,4 @@ class Graph {
 		void clear();
 };
 
-/*
-inline void dothething(Graph& g, int sid, std::vector<int> tid){
-	for(auto &i : tid)
-		g.addEdge(sid,i);
-}
-
-inline void dotheotherthingporcodio(Graph& g, int sid,int tid){
-		g.addEdge(sid,tid);
-}
-
-inline void worker(Graph &g,std::vector<EdgeList> save){
-		for(int i = 0; i <save.size(); i++){
-			g.in_edges(i).assign(save[i].begin(), save[i].end());
-
-		}
-}
-inline void print_graph(Graph& g, string labelfile, int dim){
-	ofstream out(labelfile);
-	int j = 0;
-	while(j < dim){
-		out << "Labeling " << j << endl;
-		for( int i =0; i < g.num_vertices(); i++){
-			out <<  g[i].getPre(j) << " " << g[i].getPost(j) <<  endl;
-		}
-		j++;
-	}
-}
-
-#endif
- */
-
-#endif
+#endif /* GRAPH_H_ */

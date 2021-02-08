@@ -3,8 +3,8 @@
  * Changes made on his code, available on Git
  */
 
-#ifndef _GRAIL_H
-#define _GRAIL_H
+#ifndef GRAIL_H_
+#define GRAIL_H_
 
 #include "Graph.h"
 		
@@ -30,7 +30,7 @@ class Grail {
 		bool contains(const int &, const int&);
 		//void index_size(int* ind_size);
 };
+
 void print_labeling(ostream &out, Graph &g, int dim);
-#endif
 
-
+#endif /* GRAIL_H_ */
