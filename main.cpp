@@ -9,7 +9,6 @@
  */
 
 #include "Grail.h"
-
 //const int CHUNK = 100000;
 bool isquer = false;		// is queries file in Quer format? = without ground truth
 float graph_time, labeling_time, query_time;
@@ -83,7 +82,6 @@ int main(int argc, char* argv[]) {
 
 	auto end_label = std::chrono::high_resolution_clock::now();
 
-
 	/**
 	 * @brief QUERY CONSTRUCTION
 	 */
@@ -104,7 +102,6 @@ int main(int argc, char* argv[]) {
 	std::chrono::duration<double, std::milli> query_time = end_query - start_query;
 	auto program_time = read_time + label_time + query_time;
 
-
 	/**
 	 * @brief Take file names from file path then used at line 233
 	 */
@@ -116,8 +113,8 @@ int main(int argc, char* argv[]) {
 	cout << "GRAIL FILE DATA:" << endl;
 	cout << "||Graph file: " << filename.substr(gn+1) << "||\n||Test file: " <<
 			testfilename.substr(tn+1) << "||Traversals : " << DIM << endl;
-	cout << "Graph has:\nVertexes: " << size << " Edges: " << edges << " Queries: " <<
-			queries.size() << endl;
+	cout << "Graph has " << size << " vertexes and " << edges << " edges.\n" <<
+			"Test done on " << queries.size() << " queries." << endl;
 	cout << "\n#-------------------------#\n" << endl;
 	cout << "GRAIL TIME REPORT:" << endl;
 	cout << "-Files Read\t" << read_time.count() << " ms\n-Labeling time\t" <<
@@ -181,7 +178,7 @@ static void usage() {		// here we must specify which search we want to implement
 static void parse_args(int argc, char *argv[], std::string &fname, std::string &tfname, int &dim) {
 	if (argc < 3) {	// minimum is ./grail <filename> <testfilename>
 		usage();
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
  	fname = argv[1];
  	if(isdigit(*argv[2])) {
@@ -207,7 +204,7 @@ void read_test(const std::string &tfname, std::vector<query> &queries) {
 	ifstream fstr(tfname);
 	if (!fstr) {
 		cout << "Error: Cannot open " << tfname << endl;
-		return ;
+		exit(EXIT_FAILURE);
 	}
 	if(isquer)
 		while(fstr >> src >> trg)

@@ -24,7 +24,7 @@ Graph::Graph(const std::string &filename, ThreadPool&p) {
 	ifstream in(filename);
 	if (!in) {
 		cout << "Error: Cannot open " << filename << endl;
-		return;
+		exit(EXIT_FAILURE);
 	}
 	int size, start_line = 1;		// skip first line = size
 	in >> size;
@@ -46,12 +46,12 @@ void readChunk(const std::string &file, GRA &gr, const int start, const int end)
 	ifstream fs(file);
 	if (!fs) {
 		cout << "Error: Cannot open " << file << endl;
-		return;
+		exit(EXIT_FAILURE);
 	}
 	int sid = 0, tid = 0, i = 0;
 	char hash;
 	while(i++ < start)
-		fs.ignore(INT_MAX, '\n');
+		fs.ignore(UINT_MAX, '\n');
 	while(fs >> sid >> hash >> std::ws && sid < end) {
 		while(fs.peek() != '#' && fs >> tid >> std::ws)
 			gr[sid].outList.push_back(tid);
