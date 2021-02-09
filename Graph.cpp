@@ -1,5 +1,14 @@
-#include "Graph.h"
+/*
+ * @file Graph.cpp
+ * @authors Alessando Ippolito, Federico Maresca
+ * @brief
+ * @version 1
+ * @date 2021-02-07
+ *
+ * @copyright Copyright (c) 2021
+ */
 
+#include "Graph.h"
 
 Graph::Graph() {graph = GRA();} // @suppress("Class members should be properly initialized")
 
@@ -9,10 +18,52 @@ Graph::Graph(GRA& g) {graph = g;} // @suppress("Class members should be properly
  * @brief Construct a new Graph:: Graph object
  * 
  * @param filename 
+ * @param p ThreadPool
  */
-Graph::Graph(const std::string &filename) {readGraph(filename);}
+Graph::Graph(const std::string &filename, ThreadPool&p) {
+	ifstream in(filename);
+	if (!in) {
+		cout << "Error: Cannot open " << filename << endl;
+		return;
+	}
+	int size, start_line = 1;		// skip first line = size
+	in >> size;
+	in.close();
+	graph = GRA(size, Node());
+	int chunk_size = size/CHUNK_N;
+	do {
+		p.addJob(readChunk, std::ref(filename), std::ref(graph), start_line, start_line+chunk_size);
+		start_line += chunk_size +1;		// don't read twice
+		chunk_size = (start_line+chunk_size < size) ? chunk_size : size-start_line;
+	} while (start_line < size);
+	p.waitFinished();
+	makeinList(graph);
+}
 
 Graph::~Graph() {}
+
+void readChunk(const std::string &file, GRA &gr, const int start, const int end) {
+	ifstream fs(file);
+	if (!fs) {
+		cout << "Error: Cannot open " << file << endl;
+		return;
+	}
+	int sid = 0, tid = 0, i = 0;
+	char hash;
+	while(i++ < start)
+		fs.ignore(INT_MAX, '\n');
+	while(fs >> sid >> hash >> std::ws && sid < end) {
+		while(fs.peek() != '#' && fs >> tid >> std::ws)
+			gr[sid].outList.push_back(tid);
+		fs.ignore();
+	}
+}
+
+void Graph::makeinList(GRA &gra) {
+	for(int i=0; i<gra.size(); i++)
+		for(int &tg : gra[i].outList)
+			gra[tg].inList.push_back(i);
+}
 
 /**
  * @brief Graph clear removes the node vector
@@ -20,6 +71,7 @@ Graph::~Graph() {}
  */
 void Graph::clear() {graph.clear();}
 
+/*
 /**
  * @brief Read the graph from a file path. This file need a certain structure:
  * n <-- number of vertexes
@@ -27,7 +79,7 @@ void Graph::clear() {graph.clear();}
  * src1 : trg1 trg2 trg3 ... #
  * Use the ifstream operator >> to read form the file in a formatted output
  * @param file 
- */
+ *
 void Graph::readGraph(const std::string &file) {
 	ifstream in(file, std::ios::binary);
 	if (!in) {
@@ -52,7 +104,7 @@ void Graph::readGraph(const std::string &file) {
  * 
  * @param src 
  * @param trg 
- */
+ *
 void Graph::addEdge(const int &src, const int &trg) {
 	if (src >= graph.size())
 		addVertex(src);
@@ -66,7 +118,7 @@ void Graph::addEdge(const int &src, const int &trg) {
  * @brief Add a vertex (after correctness checks) to the graph
  * 
  * @param vid 
- */
+ *
 void Graph::addVertex(const int &vid) {
 	if (vid >= graph.size()) {
 		int size = graph.size();
@@ -75,7 +127,7 @@ void Graph::addVertex(const int &vid) {
 	}
 	graph[vid] = Node(EdgeList(),EdgeList());
 }
-
+*/
 
 /**
  * @brief Containment check for labeling purposes

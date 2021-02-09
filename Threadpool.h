@@ -19,13 +19,17 @@
 #include <string>
 #include <algorithm>
 #include <chrono>
+#include <climits>
+#include <random>
 
-#define THREADS true
-#define DEBUG true
+#define DEBUG false
+#define CHUNK_N 5		// don't know why, but seems fast
+
 using std::cout;
 using std::endl;
 using std::ifstream;
 using std::ofstream;
+
 class ThreadPool {
 	public:
 		ThreadPool();

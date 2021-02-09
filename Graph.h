@@ -1,9 +1,17 @@
+/*
+ * @file Graph.h
+ * @authors Alessando Ippolito, Federico Maresca
+ * @brief
+ * @version 1
+ * @date 2021-02-07
+ *
+ * @copyright Copyright (c) 2021
+ */
 
 #ifndef GRAPH_H_
 #define GRAPH_H_
 
 #include "Threadpool.h"
-
 
 typedef std::vector<int> EdgeList;		// edge list represented by vertex id list
 
@@ -35,21 +43,16 @@ class Graph {
 	public:
 		Graph();
 		Graph(GRA&);
-		Graph(const std::string&);
+		Graph(const std::string&, ThreadPool&);
 		~Graph();
 
-		void readGraph(const std::string&);
-		void addEdge(const int&, const int&);
-		void addVertex(const int&);
-
-		
+		void makeinList(GRA &);
 		bool contains(const int&, const int&, const int&) const;
 		void writeGraph(std::ostream&);
 		int num_vertices() const;
 		std::vector<int> getRoots() const;
 		bool hasEdge(int&, int&);
 		int num_edges() const;
-		//GRA& vertexes();
 		EdgeList& out_edges(const int&);
 		EdgeList& in_edges(const int&);
 		int out_degree(const int&);
@@ -59,5 +62,7 @@ class Graph {
 		Node& operator[](const int &vid);
 		void clear();
 };
+
+void readChunk(const std::string&, GRA &, const int, const int);
 
 #endif /* GRAPH_H_ */
