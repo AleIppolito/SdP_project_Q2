@@ -1,6 +1,11 @@
 /*
- * New ThreadPool implementation, no futures
- * Also divided in .h and .cpp
+ * @file ThreadPool.cpp
+ * @authors Alessando Ippolito, Federico Maresca
+ * @brief
+ * @version 1
+ * @date 2021-02-07
+ *
+ * @copyright Copyright (c) 2021
  */
 
 #include "Threadpool.h"

@@ -1,6 +1,11 @@
 /*
- * New ThreadPool implementation, no futures
- * Also divided in .h and .cpp
+ * @file ThreadPool.h
+ * @authors Alessando Ippolito, Federico Maresca
+ * @brief
+ * @version 1
+ * @date 2021-02-07
+ *
+ * @copyright Copyright (c) 2021
  */
 
 #ifndef THREADPOOL_H_
@@ -23,7 +28,7 @@
 #include <random>
 
 #define DEBUG false
-#define CHUNK_N 5		// don't know why, but seems fast
+#define CHUNK_N std::thread::hardware_concurrency()
 
 using std::cout;
 using std::endl;
