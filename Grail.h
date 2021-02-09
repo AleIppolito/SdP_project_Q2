@@ -20,7 +20,7 @@ class Grail {
 		Grail(Graph& graph, int dim);
 #endif
 		~Grail();
-		static int visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, unsigned short int labelid);
+		static int visit(Graph& tree, int vid, int& pre_post, std::vector<bool>& visited, unsigned short int labelid);
 		static void randomlabeling(Graph& tree, unsigned short int labelid);
 		Graph& getGraph(){ return g;	};
 		char getReachability(int n) {return reachability[n];}
@@ -31,6 +31,6 @@ class Grail {
 		//void index_size(int* ind_size);
 };
 
-void print_labeling(ostream &out, Graph &g, int dim);
+void print_labeling(std::ostream &out, Graph &g, int dim);
 
 #endif /* GRAIL_H_ */

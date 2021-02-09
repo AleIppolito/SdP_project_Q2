@@ -1,6 +1,6 @@
 /**
  * @file main.cpp
- * @authors Federico Maresca, Alessando Ippolito
+ * @authors Alessando Ippolito, Federico Maresca
  * @brief 
  * @version 1
  * @date 2021-02-07
@@ -10,7 +10,7 @@
 
 #include "Grail.h"
 
-int CHUNK = 100000;
+const int CHUNK = 100000;
 bool isquer = false;
 float graph_time, labeling_time, query_time;
 
@@ -33,15 +33,15 @@ void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, 
  * @brief Input reading functions
  * 
  */
-void read_graph(const std::string &fname, Graph &gr);
-void read_test(const std::string &tfname, std::vector<query> &q);
+void read_graph(const std::string &fname, Graph &graph);
+void read_test(const std::string &tfname, std::vector<query> &queries);
 
 /**
  * @brief Helper functions
  */
 static void parse_args(int argc, char *argv[], std::string &fname, std::string &tfname, int &dim);
 static void usage();
-void print_query(ostream &out, Grail &grail, std::vector<query> &queries);
+void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries);
 // --------------------------------------------------------------------
 
 /* GRAIL WITH CONCURRENT IMPLEMENTATION
@@ -67,23 +67,14 @@ int main(int argc, char* argv[]) {
 
 	auto start_read = std::chrono::high_resolution_clock::now();
 
-	Graph g;
-	pool.addJob(read_graph, std::ref(filename), std::ref(g));
+	Graph graph;
+	pool.addJob(read_graph, std::ref(filename), std::ref(graph));
 	pool.addJob(read_test, std::ref(testfilename), std::ref(queries));
 	pool.waitFinished();
 
 	auto end_read = std::chrono::high_resolution_clock::now();
 
-#if DEBUG
-	ofstream qout("./queries");
-	cout << "print_queries_and_nodes" << endl;
-	for(query &q: queries)
-		qout << q.src << " " << q.trg << " " << q.labels << endl;
-	qout.close();
 
-	ofstream gout("./graph");
-	g.writeGraph(gout);
-#endif
 
 	/**
 	 * @brief GRAIL CONSTRUCTION
@@ -92,7 +83,7 @@ int main(int argc, char* argv[]) {
 
 	auto start_label = std::chrono::high_resolution_clock::now();
 
-	Grail grail(std::ref(g), DIM, pool);
+	Grail grail(std::ref(graph), DIM, pool);
 
 	auto end_label = std::chrono::high_resolution_clock::now();
 
@@ -109,8 +100,8 @@ int main(int argc, char* argv[]) {
 
 	auto end_query = std::chrono::high_resolution_clock::now();
 
-	unsigned int size = g.num_vertices();
-	unsigned int edges = g.num_edges();
+	unsigned int size = graph.num_vertices();
+	unsigned int edges = graph.num_edges();
 	//g.clear();
 	std::chrono::duration<double, std::milli> read_time = end_read - start_read;
 	std::chrono::duration<double, std::milli> label_time = end_label - start_label;
@@ -123,7 +114,7 @@ int main(int argc, char* argv[]) {
 	 */
   	std::size_t gn = filename.find_last_of("/\\");
 	std::size_t tn = testfilename.find_last_of("/\\");
-	cout.setf(ios::fixed);
+	cout.setf(std::ios::fixed);
 	cout.precision(3);
 	cout << "\n__________________________________________________\n\n" << endl;
 	cout << "GRAIL FILE DATA:" << endl;
@@ -139,8 +130,27 @@ int main(int argc, char* argv[]) {
 	cout << "\n__________________________________________________\n\n" << endl;
 
 	#if DEBUG
-	ofstream reach("./reach.txt");
+	std::string q = "./q";
+	std::string g = "./g";
+	std::string r = "./r";
+	std::string l = "./l";
+	q = q.append(filename.substr(gn+1));
+	g = g.append(filename.substr(gn+1));
+	r = r.append(filename.substr(gn+1));
+	l = l.append(filename.substr(gn+1));
+	ofstream qout(q);
+	cout << "print_queries_and_nodes" << endl;
+	for(query &q: queries)
+		qout << q.src << " " << q.trg << " " << q.labels << endl;
+
+	ofstream gout(g);
+	graph.writeGraph(gout);
+
+	ofstream reach(r);
 	print_query(reach, grail, queries);
+
+	ofstream label(l);
+	print_labeling(label,graph,DIM);
 	#endif
 }
 
@@ -196,19 +206,19 @@ static void parse_args(int argc, char *argv[], std::string &fname, std::string &
  * @param tfname TEST_FILENAME
  * @param q Query vector
  */
-void read_test(const std::string &tfname, std::vector<query> &q) {
-	int s,t,label=0;
+void read_test(const std::string &tfname, std::vector<query> &queries) {
+	int src,trg,label=0;
 	ifstream fstr(tfname);
 	if (!fstr) {
 		cout << "Error: Cannot open " << tfname << endl;
 		return ;
 	}
 	if(isquer)
-		while(fstr >> s >> t)
-			q.push_back({s, t, 0});
+		while(fstr >> src >> trg)
+			queries.push_back({src, trg, 0});
 	else
-		while(fstr >> s >> t >> label)
-			q.push_back({s, t, label});
+		while(fstr >> src >> trg >> label)
+			queries.push_back({src, trg, label});
 }
 
 /**
@@ -219,8 +229,8 @@ void read_test(const std::string &tfname, std::vector<query> &q) {
  * @param fname GRAPH_FILENAME
  * @param gr Graph Object
  */
-void read_graph(const std::string &fname, Graph &gr) {
-	gr.readGraph(fname);
+void read_graph(const std::string &fname, Graph &graph) {
+	graph.readGraph(fname);
 }
 
 /**
@@ -230,7 +240,7 @@ void read_graph(const std::string &fname, Graph &gr) {
  * @param grail Grail object that contains the reachability result
  * @param queries queries std::vector of query struct 
  */
-void print_query(ostream &out, Grail &grail, std::vector<query> &queries) {
+void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries) {
 	int i = 0;
 	cout << "Queries solution: " << endl;
 	for (auto &q : queries){
@@ -266,7 +276,6 @@ void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, 
  * @param pool Threadpool reference used to launch each query search
  */
 void search_reachability(Grail &grail, const std::vector<query> &queries, ThreadPool &pool) {
-	//grail.setReachabilty(queries.size());
 	reachability.resize(queries.size());
 	int begin = 0;
 	int chunk = (CHUNK < queries.size()) ? CHUNK : queries.size();

@@ -1,15 +1,9 @@
-/*
- * Copyright (c) Hilmi Yildirim 2010,2011.
- * Changes made on his code, available on Git
- */
 
 #ifndef GRAPH_H_
 #define GRAPH_H_
 
 #include "Threadpool.h"
 
-namespace std {using namespace __gnu_cxx;}
-using namespace std;
 
 typedef std::vector<int> EdgeList;		// edge list represented by vertex id list
 
@@ -41,16 +35,16 @@ class Graph {
 	public:
 		Graph();
 		Graph(GRA&);
-		Graph(const string&);
+		Graph(const std::string&);
 		~Graph();
 
-		void readGraph(const string&);
+		void readGraph(const std::string&);
 		void addEdge(const int&, const int&);
 		void addVertex(const int&);
 
 		
-		bool contains(const int&, const int&, const int&);
-		void writeGraph(ostream&);
+		bool contains(const int&, const int&, const int&) const;
+		void writeGraph(std::ostream&);
 		int num_vertices() const;
 		std::vector<int> getRoots() const;
 		bool hasEdge(int&, int&);

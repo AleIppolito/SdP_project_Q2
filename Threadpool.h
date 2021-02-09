@@ -21,8 +21,11 @@
 #include <chrono>
 
 #define THREADS true
-#define DEBUG false
-
+#define DEBUG true
+using std::cout;
+using std::endl;
+using std::ifstream;
+using std::ofstream;
 class ThreadPool {
 	public:
 		ThreadPool();

@@ -6,14 +6,7 @@
 #include "Grail.h"
 
 
-void print_labeling(ostream &out, Graph &g, int dim){
-	for(int i = 0; i < dim; i++){
-		out << "Printing labeling " << i << endl;
-		for(int j = 0; j < g.num_vertices();j++){
-			out << j << g[j].getPre(i) << " " << g[j].getPost(i) << endl; 
-		}
-	}
-}
+
 Grail::Grail(Graph& graph, int Dim ,ThreadPool& pool): g(graph), dim(Dim) { // @suppress("Class members should be properly initialized")
 	int i;
 	for(i = 0; i <  g.num_vertices(); i++)
@@ -41,7 +34,7 @@ void Grail::randomlabeling(Graph& tree, unsigned short int labelid) {
 }	
 
 // traverse tree to label node with pre and post order by giving a start node
-int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, unsigned short int labelid) {
+int Grail::visit(Graph& tree, int vid, int& pre_post, std::vector<bool>& visited, unsigned short int labelid) {
 	visited[vid] = true;
 	EdgeList el = tree.out_edges(vid);
 	//random_shuffle(el.begin(),el.end());
@@ -49,11 +42,11 @@ int Grail::visit(Graph& tree, int vid, int& pre_post, vector<bool>& visited, uns
 	int pre_order = tree.num_vertices()+1;
 	for(eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit])
-			pre_order = min(pre_order, visit(tree, *eit, pre_post, visited, labelid));
+			pre_order = std::min(pre_order, visit(tree, *eit, pre_post, visited, labelid));
 		else
-			pre_order = min(pre_order, tree[*eit].getPre(labelid) );
+			pre_order = std::min(pre_order, tree[*eit].getPre(labelid) );
 	}
-	pre_order = min(pre_order, pre_post);
+	pre_order = std::min(pre_order, pre_post);
 	tree[vid].setLabel(pre_order, pre_post, labelid);
 	pre_post++;
 	return pre_order;
@@ -84,22 +77,18 @@ char Grail::bidirectionalReach(int src,int trg, int query_id, std::vector<int>& 
 	*/
 
 	if(src == trg ) {
-		//reachability[query_id] = 'r'; 
 		return 'r';
 	}
 
 	if( !contains(src,trg)) {
-		//reachability[query_id] = 'n';
 		return 'n';
 	}
 	else if(!g.out_degree(src) || !g.in_degree(trg)){
-		//reachability[query_id] = 'f';
 		return 'f';
 	}
-	
+	query_id++;
 	std::queue<int> forward;
 	std::queue<int> backward;
-
 	visited[src] = query_id;
 	forward.push(src);
 	visited[trg] = -query_id;
@@ -117,7 +106,6 @@ char Grail::bidirectionalReach(int src,int trg, int query_id, std::vector<int>& 
 
 		for (ei = el.begin(); ei != el.end(); ei++) {
 			if(visited[*ei]==-query_id) {
-				//reachability[query_id] = 'r';
 				return 'r';
 			} else if(visited[*ei]!=query_id && contains(*ei,trg)) {
 				forward.push(*ei);
@@ -130,7 +118,6 @@ char Grail::bidirectionalReach(int src,int trg, int query_id, std::vector<int>& 
 		el = g.in_edges(next);
 		for (ei = el.begin(); ei != el.end(); ei++) {
 			if(visited[*ei]==query_id) {
-				//reachability[query_id] = 'r';
 				return 'r';
 			} else if(visited[*ei]!=-query_id && contains(src,*ei)) {
 				backward.push(*ei);
@@ -138,6 +125,26 @@ char Grail::bidirectionalReach(int src,int trg, int query_id, std::vector<int>& 
 			}
 		}
 	}
-	//reachability[query_id] = 'f';
 	return 'f';
+}
+
+/*************************************************************************************
+Helper functions 
+*************************************************************************************/
+
+ 
+/**
+ * @brief Printing function for debugging purposes, prints the labeling for each node
+ * 
+ * @param out 
+ * @param g 
+ * @param dim 
+ */
+void print_labeling(std::ostream &out, Graph &g, int dim){
+	for(int i = 0; i < dim; i++){
+		out << "Printing labeling " << i << endl;
+		for(int j = 0; j < g.num_vertices();j++){
+			out << j << " " << g[j].getPre(i) << " " << g[j].getPost(i) << endl; 
+		}
+	}
 }

@@ -1,22 +1,35 @@
-/*
- * Copyright (c) Hilmi Yildirim 2010,2011.
- * Changes made on his code, available on Git
- */
-
 #include "Graph.h"
+
 
 Graph::Graph() {graph = GRA();} // @suppress("Class members should be properly initialized")
 
 Graph::Graph(GRA& g) {graph = g;} // @suppress("Class members should be properly initialized")
 
-Graph::Graph(const string &filename) {readGraph(filename);}
+/**
+ * @brief Construct a new Graph:: Graph object
+ * 
+ * @param filename 
+ */
+Graph::Graph(const std::string &filename) {readGraph(filename);}
 
 Graph::~Graph() {}
 
+/**
+ * @brief Graph clear removes the node vector
+ * 
+ */
 void Graph::clear() {graph.clear();}
 
-void Graph::readGraph(const string &file) {
-	ifstream in(file, ios::binary);
+/**
+ * @brief Read the graph from a file path. This file need a certain structure:
+ * n <-- number of vertexes
+ * src0 : trg1 trg2 trg3 ... #
+ * src1 : trg1 trg2 trg3 ... #
+ * Use the ifstream operator >> to read form the file in a formatted output
+ * @param file 
+ */
+void Graph::readGraph(const std::string &file) {
+	ifstream in(file, std::ios::binary);
 	if (!in) {
 		cout << "Error: Cannot open " << file << endl;
 		return ;
@@ -33,15 +46,27 @@ void Graph::readGraph(const string &file) {
 	}
 }
 
-void Graph::addEdge(const int &s, const int &t) {
-	if (s >= graph.size())
-		addVertex(s);
-	if (t >= graph.size())
-		addVertex(t);
-	graph[t].inList.push_back(s);
-	graph[s].outList.push_back(t);
+/**
+ * @brief Add an edge (after correctness checks) to a src vertex by pushing the target vertex 
+ * to its outlist and the src vertex to the target inlist 
+ * 
+ * @param src 
+ * @param trg 
+ */
+void Graph::addEdge(const int &src, const int &trg) {
+	if (src >= graph.size())
+		addVertex(src);
+	if (trg >= graph.size())
+		addVertex(trg);
+	graph[trg].inList.push_back(src);
+	graph[src].outList.push_back(trg);
 }
 
+/**
+ * @brief Add a vertex (after correctness checks) to the graph
+ * 
+ * @param vid 
+ */
 void Graph::addVertex(const int &vid) {
 	if (vid >= graph.size()) {
 		int size = graph.size();
@@ -52,8 +77,16 @@ void Graph::addVertex(const int &vid) {
 }
 
 
-
-bool Graph::contains(const int &src, const int &trg, const int &dim) {
+/**
+ * @brief Containment check for labeling purposes
+ *  * 
+ * @param src 
+ * @param trg 
+ * @param dim 
+ * @return true 
+ * @return false 
+ */
+bool Graph::contains(const int &src, const int &trg, const int &dim) const {
 	for(int i=0; i<dim; i++) {
 		if(graph[src].getPre(i) > graph[trg].getPre(i))
 			return false;
@@ -63,7 +96,13 @@ bool Graph::contains(const int &src, const int &trg, const int &dim) {
 	return true;
 }
 
-void Graph::writeGraph(ostream& out) {
+/**
+ * @brief Generic graph write function, used for debugging to print out
+ * the graph to an ostream
+ * 
+ * @param out 
+ */
+void Graph::writeGraph(std::ostream& out) {
 	cout << "Graph size = " << graph.size() << endl;
 	out << graph.size() << endl;
 	for (int i = 0; i < graph.size(); i++) {
@@ -74,15 +113,9 @@ void Graph::writeGraph(ostream& out) {
 	}
 }
 
-int Graph::num_edges() const {
-	int num = 0;
-	for (const Node &git : graph)
-		num += git.outList.size();
-	return num;
-}
 
-// get roots of graph (root is zero in_degree vertex)
-vector<int> Graph::getRoots() const {
+
+std::vector<int> Graph::getRoots() const {
 	std::vector<int> roots;
 	int i = 0;
 	for(const Node &git : graph) {
@@ -93,7 +126,6 @@ vector<int> Graph::getRoots() const {
 	return roots;
 }
 
-// check whether the edge from src to trg is in the graph
 bool Graph::hasEdge(int &src, int &trg) {
 	for (int &ei : graph[src].outList)
 		if (ei == trg)
@@ -101,27 +133,45 @@ bool Graph::hasEdge(int &src, int &trg) {
 	return false;
 }
 
+/**
+ * @brief Operator override for Node list initialization
+ * 
+ * @param g 
+ * @return * Operator& 
+ */
 Graph& Graph::operator=(const Graph& g) {
 	if (this != &g)
 		graph = g.graph;
 	return *this;
 }
 
-// get a specified vertex property
+/**
+ * @brief Operator override to access vertex properties
+ * 
+ * @param vid 
+ * @return Node& 
+ */
 Node& Graph::operator[](const int &vid) {return graph[vid];}
 
-// return out edges of specified vertex
+/**
+ * @brief General getter functions, used to receive info on the graph
+ * Self explanatory titles.
+ */
+
+int Graph::num_edges() const {	
+	int num = 0;
+	for (const Node &git : graph)
+		num += git.outList.size();
+	return num;
+}
+
 EdgeList& Graph::out_edges(const int &src) {return graph[src].outList;}
 
-// return in edges of specified vertex
 EdgeList& Graph::in_edges(const int &trg) {return graph[trg].inList;}
 
 int Graph::out_degree(const int &src) {return graph[src].outList.size();}
 
 int Graph::in_degree(const int &trg) {return graph[trg].inList.size();}
-
-// return vertex list of graph
-//GRA& Graph::vertexes() {return this->graph;}
 
 void Graph::printGraph() {writeGraph(cout);}
 
