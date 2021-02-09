@@ -10,22 +10,38 @@
 
 #include "Grail.h"
 
+int CHUNK = 100000;
 bool isquer = false;
 float graph_time, labeling_time, query_time;
+
 struct query{
 	int src;
 	int trg;
 	int labels;
 };
+
+
 std::vector<char> reachability;
+
+/**
+ * @brief Reachability query functions
+ */
 void search_reachability(Grail &grail, const std::vector<query> &queries, ThreadPool &pool);
 void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, int end);
-void print_query(ostream &out, Grail &grail, std::vector<query> &queries);
+
+/**
+ * @brief Input reading functions
+ * 
+ */
 void read_graph(const std::string &fname, Graph &gr);
 void read_test(const std::string &tfname, std::vector<query> &q);
+
+/**
+ * @brief Helper functions
+ */
 static void parse_args(int argc, char *argv[], std::string &fname, std::string &tfname, int &dim);
 static void usage();
-
+void print_query(ostream &out, Grail &grail, std::vector<query> &queries);
 // --------------------------------------------------------------------
 
 /* GRAIL WITH CONCURRENT IMPLEMENTATION
@@ -70,7 +86,7 @@ int main(int argc, char* argv[]) {
 #endif
 
 	/**
-	 * @brief GRAIL CONSTRUCTION, each traversal happens on a different thread
+	 * @brief GRAIL CONSTRUCTION
 	 */
 	cout << "Label construction..." << endl;
 
@@ -82,7 +98,7 @@ int main(int argc, char* argv[]) {
 
 
 	/**
-	 * @brief QUERY CONSTRUCTION each query check happens on a differnt thread
+	 * @brief QUERY CONSTRUCTION
 	 */
 
 	cout << "Query testing..." << endl;
@@ -122,12 +138,16 @@ int main(int argc, char* argv[]) {
 			" ms\n-TOTAL TIME\t"  << program_time.count() << " ms" << endl;
 	cout << "\n__________________________________________________\n\n" << endl;
 
-	//#if DEBUG
-	ofstream out("./queriesour.txt");
-	print_query(out, grail, queries);
-	//#endif
+	#if DEBUG
+	ofstream reach("./reach.txt");
+	print_query(reach, grail, queries);
+	#endif
 }
 
+/**
+ * @brief Static helper function for command line menu
+ * 
+ */
 static void usage() {		// here we must specify which search we want to implement - probably bidirectional
 	cout << "Usage:\n"
 			"./grail [-h] <filename> [<DIM>]  <testfilename>\n"
@@ -168,7 +188,11 @@ static void parse_args(int argc, char *argv[], std::string &fname, std::string &
 /**
  * @brief This function reads TEST_FILENAME and saves the queries in a std::vector of queries, a struct
  * that contains 2 integers (src,trg)
- * 
+ * File structure required:
+ *  src  trg opt(label)
+ * 	int  int 
+ * 	int  int 
+ *  ...  ...
  * @param tfname TEST_FILENAME
  * @param q Query vector
  */
@@ -234,9 +258,9 @@ void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, 
 }
 
 /**
- * @brief This wrapper function handles iteration over all of the queries. Each label is checked through 
- * bidirecitonalReach in Grail.cpp  
- * 
+ * @brief This wrapper function handles iteration over all of the queries. It takes
+ * a chunk of queries defined as a constant and hands each chunk to the task pool.
+ * Best results with high chunk value circa 100000
  * @param grail Grail object
  * @param queries Query vector with all queries from TEST_FILENAME
  * @param pool Threadpool reference used to launch each query search
@@ -245,7 +269,7 @@ void search_reachability(Grail &grail, const std::vector<query> &queries, Thread
 	//grail.setReachabilty(queries.size());
 	reachability.resize(queries.size());
 	int begin = 0;
-	int chunk = 90000;
+	int chunk = (CHUNK < queries.size()) ? CHUNK : queries.size();
 	while(begin < queries.size()) {
 		pool.addJob(Wbidirectional, std::ref(grail),std::ref(queries),begin,begin+chunk);
 		begin +=chunk;
