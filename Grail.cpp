@@ -10,12 +10,12 @@
 
 #include "Grail.h"
 
-Grail::Grail(Graph& graph, int Dim ,ThreadPool& pool): g(graph), dim(Dim) { // @suppress("Class members should be properly initialized")
+Grail::Grail(Graph& graph, int Dim ,ThreadPool& pool): g(graph), dim(Dim) { 
 	int i;
 	for(i = 0; i <  g.num_vertices(); i++)
 		graph[i].labels.resize(dim);
 	for(i=0; i<dim; i++)
-		pool.addJob(randomlabeling, std::ref(graph), i);
+		pool.addJob(randomlabeling,std::ref(graph), i);
 	pool.waitFinished();
 }
 
@@ -29,8 +29,8 @@ Grail::~Grail() {}
 void Grail::randomlabeling(Graph& tree, unsigned short int labelid) {
 	std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd());
-	std::vector<int> roots = tree.getRoots();
-	std::vector<int>::iterator sit;
+	EdgeList roots = tree.getRoots();
+	EdgeList::iterator sit;
 	int pre_post = 0;
 	std::vector<bool> visited(tree.num_vertices(), false);
 
@@ -49,6 +49,7 @@ int Grail::visit(Graph& tree, int vid, int& pre_post, std::vector<bool>& visited
 
 	EdgeList::iterator eit;
 	int pre_order = tree.num_vertices()+1;
+	
 	for(eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit])
 			pre_order = std::min(pre_order, visit(tree, *eit, pre_post, visited, labelid, gen));
@@ -131,7 +132,8 @@ char Grail::bidirectionalReach(int src,int trg, int query_id, std::vector<int>& 
 Helper functions 
 *************************************************************************************/
 
- 
+Graph& Grail::getGraph() const {return g;};
+
 /**
  * @brief Printing function for debugging purposes, prints the labeling for each node
  * 

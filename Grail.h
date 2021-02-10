@@ -13,23 +13,21 @@
 
 #include "Graph.h"
 
-typedef std::vector<char> ReachVector;
 		
 class Grail {
 	private:
 		Graph& g;
 		int dim;
-		ReachVector reachability;
 	public:
 		Grail(Graph& graph, int dim, ThreadPool&);
 		~Grail();
 
 		static int visit(Graph& , int , int& , std::vector<bool>& , unsigned short int,std::mt19937& );
 		static void randomlabeling(Graph& tree, unsigned short int labelid);
-		Graph& getGraph() const {return g;};
-		char getReachability(int n) {return reachability[n];}
-		void setReach(const int &query_id, const char &sol) {reachability[query_id] = sol;}
-		void setReachabilty(const int &n) {reachability.resize(n);};
+		Graph& getGraph() const;
+		char getReachability(int n);
+		void setReach(const int &query_id, const char &sol);
+		void setReachabilty(const int &n);
 		char bidirectionalReach(int src, int trg, int query_id, std::vector<int>& visited);
 		bool contains(const int &, const int&);
 };

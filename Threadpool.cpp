@@ -42,7 +42,7 @@ void ThreadPool::thread_proc() {
     	if (!tasks.empty()) {
     		++busy;
             auto fn = tasks.front();
-            tasks.pop_front();
+            tasks.pop();
             latch.unlock();
             fn();
             ++processed;

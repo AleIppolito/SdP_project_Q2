@@ -9,16 +9,16 @@
  */
 
 #include "Grail.h"
-bool isquer = false;		// is queries file in Quer format? = without ground truth
-float graph_time, labeling_time, query_time;
+
 
 struct query{
 	int src;
 	int trg;
+#if GROUND_TRUTH
 	int labels;
+#endif
 };
 
-int const CHUNK = 100000;
 std::vector<char> reachability;
 
 /**
@@ -41,6 +41,9 @@ static void usage();
 void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries);
 #endif
 
+#if GROUND_TRUTH
+void ground_truth_check(std::vector<query>& queries);
+#endif
 // --------------------------------------------------------------------
 
 /* GRAIL WITH CONCURRENT IMPLEMENTATION
@@ -53,16 +56,16 @@ int main(int argc, char* argv[]) {
 	auto program_start = std::chrono::high_resolution_clock::now();
 
 	std::string filename, testfilename;
-	int DIM = 2;
+	int DIM;
 	std::vector<query> queries;
 	ThreadPool pool;
 
 	parse_args(argc, argv, filename, testfilename, DIM);
 
-	/**
-	 * @brief FILE INPUT READING happens concurrently for both files
+	/***********************************************
+	 * @brief GRAPH FILE INPUT READING
 	 */
-	cout << "Reading input..." << endl;
+	cout << "Reading graph..." << endl;
 
 	auto start_read = std::chrono::high_resolution_clock::now();
 
@@ -70,18 +73,20 @@ int main(int argc, char* argv[]) {
 
 	auto end_read = std::chrono::high_resolution_clock::now();
 
-	/**
-	 * @brief GRAIL CONSTRUCTION
+	/***********************************************
+	 * @brief GRAIL CONSTRUCTION AND QUERY READ
 	 */
 	cout << "Label construction..." << endl;
 
 	auto start_label = std::chrono::high_resolution_clock::now();
+
 	pool.addJob(read_test, std::ref(testfilename), std::ref(queries));
+	
 	Grail grail(std::ref(graph), DIM, pool);
 
 	auto end_label = std::chrono::high_resolution_clock::now();
 
-	/**
+	/***********************************************
 	 * @brief QUERY CONSTRUCTION
 	 */
 
@@ -89,7 +94,7 @@ int main(int argc, char* argv[]) {
 
 	auto start_query = std::chrono::high_resolution_clock::now();
 
-	search_reachability(std::ref(grail), std::ref(queries), std::ref(pool));
+	search_reachability(grail, queries,pool);
 
 	auto end_query = std::chrono::high_resolution_clock::now();
 
@@ -101,8 +106,12 @@ int main(int argc, char* argv[]) {
 	std::chrono::duration<double, std::milli> query_time = end_query - start_query;
 	auto program_time = read_time + label_time + query_time;
 
-	/**
-	 * @brief Take file names from file path then used at line 233
+
+#if GROUND_TRUTH
+	ground_truth_check(queries);
+#endif
+	/***********************************************
+	 * @brief String arithmetic to get file names from path
 	 */
   	std::size_t gn = filename.find_last_of("/\\");
 	std::size_t tn = testfilename.find_last_of("/\\");
@@ -121,6 +130,11 @@ int main(int argc, char* argv[]) {
 			" ms\n-TOTAL TIME\t"  << program_time.count() << " ms" << endl;
 	cout << "\n__________________________________________________\n\n" << endl;
 
+	/***********************************************
+	 * @brief Debug code snippet for printing query, graph,
+	 *        reachability and labeling files
+	 * 
+	 */
 #if DEBUG
 	std::string q = "./q";
 	std::string g = "./g";
@@ -144,6 +158,7 @@ int main(int argc, char* argv[]) {
 	ofstream label(l);
 	print_labeling(label,graph,DIM);
 #endif
+return 0;
 }
 
 /**
@@ -183,8 +198,10 @@ static void parse_args(int argc, char *argv[], std::string &fname, std::string &
  	if(isdigit(*argv[2])) {
  		dim = atoi(argv[2]);
  		tfname = argv[3];
- 	} else
+ 	} else {
+		dim = 2;
  		tfname = argv[2];
+	 }
 }
 
 /**
@@ -199,18 +216,20 @@ static void parse_args(int argc, char *argv[], std::string &fname, std::string &
  * @param queries Query vector
  */
 void read_test(const std::string &tfname, std::vector<query> &queries) {
-	int src,trg,label=0;
+	int src,trg;
 	ifstream fstr(tfname);
 	if (!fstr) {
 		cout << "Error: Cannot open " << tfname << endl;
 		exit(EXIT_FAILURE);
 	}
-	if(isquer)
-		while(fstr >> src >> trg)
-			queries.push_back({src, trg, 0});
-	else
+#if GROUND_TRUTH
+	int label;
 		while(fstr >> src >> trg >> label)
 			queries.push_back({src, trg, label});
+#else
+		while(fstr >> src >> trg)
+			queries.push_back({src, trg});
+#endif
 }
 
 #if DEBUG
@@ -242,10 +261,9 @@ void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries) {
  * @param query_id Query number to access the std::vector of reachability results
  */
 void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, int end) {
-	std::vector<char> localreach;
 	std::vector<int> visited(grail.getGraph().num_vertices());
 	for (int i=start; i<end; i++)
-		localreach.push_back(grail.bidirectionalReach(queries[i].src, queries[i].trg, i, std::ref(visited)));
+		reachability[i] = (grail.bidirectionalReach(queries[i].src, queries[i].trg, i, visited));
 }
 
 /**
@@ -259,8 +277,7 @@ void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, 
 void search_reachability(Grail &grail, const std::vector<query> &queries, ThreadPool &pool) {
 	reachability.resize(queries.size());
 	int begin = 0;
-	int chunk = (CHUNK < queries.size()) ? CHUNK : queries.size();
-	//int chunk = queries.size() / CHUNK_N;
+	int chunk = queries.size() / CHUNK_N;
 	while(begin < queries.size()) {
 		pool.addJob(Wbidirectional, std::ref(grail), std::ref(queries), begin, begin+chunk);
 		begin += chunk;
@@ -268,3 +285,19 @@ void search_reachability(Grail &grail, const std::vector<query> &queries, Thread
 	}
 	pool.waitFinished();
 }
+
+#if GROUND_TRUTH
+void ground_truth_check(std::vector<query>& queries){
+	int i = 0;
+	int success = 0;
+	int fail =0;
+	for(auto &q : queries){
+		if( (q.labels==0 && (reachability[i] == 'f' || reachability[i] == 'n' ))  || ( q.labels==1 && reachability[i] == 'r') )
+			success++;
+		else	
+			fail++;
+		i++;
+	}
+	cout << "Success rate: " << success/(success+fail)*100 << "%" << endl;
+}
+#endif

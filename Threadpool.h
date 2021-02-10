@@ -12,6 +12,7 @@
 #define THREADPOOL_H_
 
 #include <iostream>
+
 #include <deque>
 #include <functional>
 #include <thread>
@@ -27,7 +28,8 @@
 #include <climits>
 #include <random>
 
-#define DEBUG false
+#define DEBUG true
+#define GROUND_TRUTH true
 #define CHUNK_N std::thread::hardware_concurrency()
 
 using std::cout;
@@ -44,12 +46,13 @@ class ThreadPool {
 		unsigned int getProcessed() const;
 		template<typename F, typename...A> void addJob(F&& f, A&&... a) {	// generic push function
 			std::unique_lock<std::mutex> lock(queue_mutex);
-			tasks.emplace_back(std::bind(&f, a...));
+			tasks.emplace(std::bind(&f, a...));
+			//tasks.emplace([&](){return f(a...);} );
 			cv_task.notify_one();
 		}
 	private:
 		std::vector<std::thread> workers;
-		std::deque<std::function<void()>> tasks;
+		std::queue<std::function<void()>> tasks;
 		std::mutex queue_mutex;
 		std::condition_variable cv_task;
 		std::condition_variable cv_finished;

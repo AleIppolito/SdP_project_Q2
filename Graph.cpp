@@ -26,14 +26,15 @@ Graph::Graph(const std::string &filename, ThreadPool&p) {
 		cout << "Error: Cannot open " << filename << endl;
 		exit(EXIT_FAILURE);
 	}
-	int size, start_line = 1;		// skip first line = size
+
+	int size, start_line = 0;		
 	in >> size;
 	in.close();
 	graph = GRA(size, Node());
 	int chunk_size = size/CHUNK_N;
 	do {
 		p.addJob(readChunk, std::ref(filename), std::ref(graph), start_line, start_line+chunk_size);
-		start_line += chunk_size +1;		// don't read twice
+		start_line += chunk_size;		
 		chunk_size = (start_line+chunk_size < size) ? chunk_size : size-start_line;
 	} while (start_line < size);
 	p.waitFinished();
@@ -50,7 +51,7 @@ void readChunk(const std::string &file, GRA &gr, const int start, const int end)
 	}
 	int sid = 0, tid = 0, i = 0;
 	char hash;
-	while(i++ < start)
+	while(i++ <= start)
 		fs.ignore(UINT_MAX, '\n');
 	while(fs >> sid >> hash >> std::ws && sid < end) {
 		while(fs.peek() != '#' && fs >> tid >> std::ws)
@@ -130,25 +131,6 @@ void Graph::addVertex(const int &vid) {
 */
 
 /**
- * @brief Containment check for labeling purposes
- *  * 
- * @param src 
- * @param trg 
- * @param dim 
- * @return true 
- * @return false 
- */
-bool Graph::contains(const int &src, const int &trg, const int &dim) const {
-	for(int i=0; i<dim; i++) {
-		if(graph[src].getPre(i) > graph[trg].getPre(i))
-			return false;
-		if(graph[src].getPost(i) < graph[trg].getPost(i))
-			return false;
-	}
-	return true;
-}
-
-/**
  * @brief Generic graph write function, used for debugging to print out
  * the graph to an ostream
  * 
@@ -167,8 +149,8 @@ void Graph::writeGraph(std::ostream& out) {
 
 
 
-std::vector<int> Graph::getRoots() const {
-	std::vector<int> roots;
+EdgeList Graph::getRoots() const {
+	EdgeList roots;
 	int i = 0;
 	for(const Node &git : graph) {
 		if (git.inList.size() == 0)
@@ -178,12 +160,6 @@ std::vector<int> Graph::getRoots() const {
 	return roots;
 }
 
-bool Graph::hasEdge(int &src, int &trg) {
-	for (int &ei : graph[src].outList)
-		if (ei == trg)
-			return true;
-	return false;
-}
 
 /**
  * @brief Operator override for Node list initialization
