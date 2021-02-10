@@ -10,9 +10,9 @@
 
 #include "Graph.h"
 
-Graph::Graph() {graph = GRA();} // @suppress("Class members should be properly initialized")
+Graph::Graph() {graph = Gra();} // @suppress("Class members should be properly initialized")
 
-Graph::Graph(GRA& g) {graph = g;} // @suppress("Class members should be properly initialized")
+Graph::Graph(Gra& g) {graph = g;} // @suppress("Class members should be properly initialized")
 
 /**
  * @brief Construct a new Graph:: Graph object
@@ -30,20 +30,20 @@ Graph::Graph(const std::string &filename, ThreadPool&p) {
 	int size, start_line = 0;		
 	in >> size;
 	in.close();
-	graph = GRA(size, Node());
+	graph = Gra(size, Node());
 	int chunk_size = size/CHUNK_N;
-	do {
+	while (start_line < size) {
 		p.addJob(readChunk, std::ref(filename), std::ref(graph), start_line, start_line+chunk_size);
 		start_line += chunk_size;		
 		chunk_size = (start_line+chunk_size < size) ? chunk_size : size-start_line;
-	} while (start_line < size);
+	}
 	p.waitFinished();
 	makeinList(graph);
 }
 
-Graph::~Graph() {}
+Graph::~Graph() {clear();}
 
-void readChunk(const std::string &file, GRA &gr, const int start, const int end) {
+void readChunk(const std::string &file, Gra &gr, const int start, const int end) {
 	ifstream fs(file);
 	if (!fs) {
 		cout << "Error: Cannot open " << file << endl;
@@ -60,59 +60,10 @@ void readChunk(const std::string &file, GRA &gr, const int start, const int end)
 	}
 }
 
-void Graph::makeinList(GRA &gra) {
+void Graph::makeinList(Gra &gra) {
 	for(int i=0; i<gra.size(); i++)
 		for(int &tg : gra[i].outList)
 			gra[tg].inList.push_back(i);
-}
-
-/**
- * @brief Graph clear removes the node vector
- * 
- */
-void Graph::clear() {graph.clear();}
-
-/*
-/**
- * @brief Read the graph from a file path. This file need a certain structure:
- * n <-- number of vertexes
- * src0 : trg1 trg2 trg3 ... #
- * src1 : trg1 trg2 trg3 ... #
- * Use the ifstream operator >> to read form the file in a formatted output
- * @param file 
- *
-void Graph::readGraph(const std::string &file) {
-	ifstream in(file, std::ios::binary);
-	if (!in) {
-		cout << "Error: Cannot open " << file << endl;
-		return ;
-	}
-	int n, sid = 0, tid = 0;
-	char hash;
-	in >> n;
-	graph = GRA(n, Node());
-	
-	while(in >> sid  >> hash >> std::ws) {
-		while(in.peek() != '#' && in >> tid >> std::ws)
-			addEdge(sid, tid);
-		in.ignore();
-	}
-}
-
-/**
- * @brief Add an edge (after correctness checks) to a src vertex by pushing the target vertex 
- * to its outlist and the src vertex to the target inlist 
- * 
- * @param src 
- * @param trg 
- *
-void Graph::addEdge(const int &src, const int &trg) {
-	if (src >= graph.size())
-		addVertex(src);
-	if (trg >= graph.size())
-		addVertex(trg);
-	graph[trg].inList.push_back(src);
-	graph[src].outList.push_back(trg);
 }
 
 /**
@@ -147,8 +98,6 @@ void Graph::writeGraph(std::ostream& out) {
 	}
 }
 
-
-
 EdgeList Graph::getRoots() const {
 	EdgeList roots;
 	int i = 0;
@@ -160,9 +109,8 @@ EdgeList Graph::getRoots() const {
 	return roots;
 }
 
-
 /**
- * @brief Operator override for Node list initialization
+ * @brief Operator override for copy constructor
  * 
  * @param g 
  * @return * Operator& 
@@ -193,14 +141,16 @@ int Graph::num_edges() const {
 	return num;
 }
 
-EdgeList& Graph::out_edges(const int &src) {return graph[src].outList;}
+EdgeList& Graph::out_edges(const int src) {return graph[src].outList;}
 
-EdgeList& Graph::in_edges(const int &trg) {return graph[trg].inList;}
+EdgeList& Graph::in_edges(const int trg) {return graph[trg].inList;}
 
-int Graph::out_degree(const int &src) {return graph[src].outList.size();}
+int Graph::out_degree(const int src) {return graph[src].outList.size();}
 
-int Graph::in_degree(const int &trg) {return graph[trg].inList.size();}
+int Graph::in_degree(const int trg) {return graph[trg].inList.size();}
 
 void Graph::printGraph() {writeGraph(cout);}
 
 int Graph::num_vertices() const {return graph.size();}
+
+void Graph::clear() {graph.clear();}

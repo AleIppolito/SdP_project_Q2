@@ -12,19 +12,19 @@
 
 ThreadPool::ThreadPool() : busy(), processed(), stop() {
 	for(unsigned int i=0; i<std::thread::hardware_concurrency(); ++i)
-			workers.emplace_back(std::bind(&ThreadPool::thread_proc, this));
+		workers.emplace_back([&, this] {thread_proc();});
 }
 
-ThreadPool::ThreadPool(unsigned int n) : busy(), processed(), stop() {
+ThreadPool::ThreadPool(const unsigned n) : busy(), processed(), stop() {
 	for(unsigned int i=0; i<n; ++i)
-		workers.emplace_back(std::bind(&ThreadPool::thread_proc, this));
+		workers.emplace_back([&, this] {thread_proc();});
 }
 
 ThreadPool::~ThreadPool() {
-	std::unique_lock<std::mutex> latch(queue_mutex);
+	std::unique_lock<std::mutex> lock(queue_mutex);
 	stop = true;
 	cv_task.notify_all();
-    latch.unlock();
+    lock.unlock();
     for (auto &t : workers)
         t.join();
 }
@@ -36,17 +36,17 @@ void ThreadPool::waitFinished() {
 }
 
 void ThreadPool::thread_proc() {
-    while (true) {
-    	std::unique_lock<std::mutex> latch(queue_mutex);
-    	cv_task.wait(latch, [this](){return stop || !tasks.empty();});
+    while(true) {
+    	std::unique_lock<std::mutex> lock(queue_mutex);
+    	cv_task.wait(lock, [this](){return stop || !tasks.empty();});
     	if (!tasks.empty()) {
     		++busy;
             auto fn = tasks.front();
             tasks.pop();
-            latch.unlock();
+            lock.unlock();
             fn();
             ++processed;
-            latch.lock();
+            lock.lock();
             --busy;
             cv_finished.notify_one();
         } else if (stop) {

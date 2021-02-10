@@ -12,26 +12,25 @@
 #define GRAIL_H_
 
 #include "Graph.h"
-
 		
 class Grail {
 	private:
 		Graph& g;
 		int dim;
 	public:
-		Grail(Graph& graph, int dim, ThreadPool&);
+		Grail(Graph&, const int, ThreadPool&);
 		~Grail();
 
-		static int visit(Graph& , int , int& , std::vector<bool>& , unsigned short int,std::mt19937& );
-		static void randomlabeling(Graph& tree, unsigned short int labelid);
+		static void randomlabeling(Graph&, const unsigned short);
+		static int visit(Graph&, const int, int&, std::vector<bool>&, const unsigned short, std::mt19937&);
+		bool contains(const int, const int);
+		char bidirectionalReach(const int, const int, int, std::vector<int>&);
+		char getReachability(const int n);
+		//void setReach(const int, const char);
+		//void setReachabilty(const int);
 		Graph& getGraph() const;
-		char getReachability(int n);
-		void setReach(const int &query_id, const char &sol);
-		void setReachabilty(const int &n);
-		char bidirectionalReach(int src, int trg, int query_id, std::vector<int>& visited);
-		bool contains(const int &, const int&);
 };
 
-void print_labeling(std::ostream &out, Graph &g, int dim);
+void print_labeling(std::ostream&, Graph&, const int);
 
 #endif /* GRAIL_H_ */

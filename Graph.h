@@ -20,8 +20,7 @@ struct Label{
 	int post;
 
 	Label(){};
-	Label(const int &PRE, const int &POST) : pre(PRE), post(POST){} // @suppress("Class members should be properly initialized")
-	
+	Label(const int &PRE, const int &POST) : pre(PRE), post(POST){}
 };
 
 struct Node {
@@ -31,33 +30,33 @@ struct Node {
 
 	Node(){}; 
 	Node(EdgeList in, EdgeList out) : inList(in), outList(out) {} // @suppress("Class members should be properly initialized")
-	
 
 	Label getLabel(const int &labelid) const {return labels[labelid];}
 	int getPost(const int &labelid) const {return getLabel(labelid).post;}
 	int getPre(const int &labelid) const {return getLabel(labelid).pre;}
 	void setLabel(const int &pre, const int &post, const int &id) {labels[id] = Label(pre, post);}
 };
-typedef std::vector<Node> GRA;	
+
+typedef std::vector<Node> Gra;
 
 class Graph {
 	private:
 		int dim;
-		GRA graph;
+		Gra graph;
 	public:
 		Graph();
-		Graph(GRA&);
+		Graph(Gra&);
 		Graph(const std::string&, ThreadPool&);
 		~Graph();
 
-		void makeinList(GRA &);
+		void makeinList(Gra &);
 
 		EdgeList getRoots() const;
-		EdgeList& out_edges(const int&);
-		EdgeList& in_edges(const int&);
+		EdgeList& out_edges(const int);
+		EdgeList& in_edges(const int);
 
-		int out_degree(const int&);
-		int in_degree(const int&);
+		int out_degree(const int);
+		int in_degree(const int);
 		int num_edges() const;
 		int num_vertices() const;
 		
@@ -65,11 +64,11 @@ class Graph {
 		void writeGraph(std::ostream&);
 
 		Graph& operator=(const Graph&);
-		Node& operator[](const int &vid);
+		Node& operator[](const int&);
 
 		void clear();
 };
 
-void readChunk(const std::string&, GRA &, const int, const int);
+void readChunk(const std::string&, Gra &, const int, const int);
 
 #endif /* GRAPH_H_ */

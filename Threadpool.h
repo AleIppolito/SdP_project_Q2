@@ -12,8 +12,6 @@
 #define THREADPOOL_H_
 
 #include <iostream>
-
-#include <deque>
 #include <functional>
 #include <thread>
 #include <condition_variable>
@@ -28,7 +26,7 @@
 #include <climits>
 #include <random>
 
-#define DEBUG true
+#define DEBUG false
 #define GROUND_TRUTH true
 #define CHUNK_N std::thread::hardware_concurrency()
 
@@ -40,14 +38,13 @@ using std::ofstream;
 class ThreadPool {
 	public:
 		ThreadPool();
-		ThreadPool(unsigned int n);
+		ThreadPool(const unsigned);
 		~ThreadPool();
 		void waitFinished();
-		unsigned int getProcessed() const;
-		template<typename F, typename...A> void addJob(F&& f, A&&... a) {	// generic push function
+		unsigned getProcessed() const;
+		template<typename F, typename ...A> void addJob(F&& f, A&&... a) {	// generic push function
 			std::unique_lock<std::mutex> lock(queue_mutex);
-			tasks.emplace(std::bind(&f, a...));
-			//tasks.emplace([&](){return f(a...);} );
+			tasks.emplace([=]{f(a...);} );
 			cv_task.notify_one();
 		}
 	private:
@@ -57,7 +54,7 @@ class ThreadPool {
 		std::condition_variable cv_task;
 		std::condition_variable cv_finished;
 		std::atomic_uint processed;
-		unsigned int busy;
+		unsigned busy;
 		bool stop;
     	void thread_proc();
 };

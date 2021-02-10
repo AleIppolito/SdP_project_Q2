@@ -10,7 +10,6 @@
 
 #include "Grail.h"
 
-
 struct query{
 	int src;
 	int trg;
@@ -24,26 +23,27 @@ std::vector<char> reachability;
 /**
  * @brief Reachability query functions
  */
-void search_reachability(Grail &grail, const std::vector<query> &queries, ThreadPool &pool);
-void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, int end);
+void search_reachability(Grail&, const std::vector<query>&, ThreadPool&);
+void Wbidirectional(Grail&, const std::vector<query>&, const int, const int);
 
 /**
  * @brief Input reading functions
  */
-void read_test(const std::string &tfname, std::vector<query> &queries);
+void read_test(const std::string&, std::vector<query>&);
 
 /**
  * @brief Helper functions
  */
-static void parse_args(int argc, char *argv[], std::string &fname, std::string &tfname, int &dim);
+static void parse_args(int, char **, std::string&, std::string&, int&);
 static void usage();
 #if DEBUG
-void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries);
+void print_query(std::ostream &, Grail &, std::vector<query> &);
 #endif
 
 #if GROUND_TRUTH
-void ground_truth_check(std::vector<query>& queries);
+void ground_truth_check(const std::vector<query>&);
 #endif
+
 // --------------------------------------------------------------------
 
 /* GRAIL WITH CONCURRENT IMPLEMENTATION
@@ -52,9 +52,8 @@ void ground_truth_check(std::vector<query>& queries);
 * pushing the functions into a task queue from which the threads pop it and runs it.
 * Chrono library is used to check on execution time.
 */
-int main(int argc, char* argv[]) {
-	auto program_start = std::chrono::high_resolution_clock::now();
-
+int main(int argc, char **argv) {
+	//auto program_start = std::chrono::high_resolution_clock::now();
 	std::string filename, testfilename;
 	int DIM;
 	std::vector<query> queries;
@@ -68,9 +67,7 @@ int main(int argc, char* argv[]) {
 	cout << "Reading graph..." << endl;
 
 	auto start_read = std::chrono::high_resolution_clock::now();
-
 	Graph graph(filename, pool);
-
 	auto end_read = std::chrono::high_resolution_clock::now();
 
 	/***********************************************
@@ -79,11 +76,8 @@ int main(int argc, char* argv[]) {
 	cout << "Label construction..." << endl;
 
 	auto start_label = std::chrono::high_resolution_clock::now();
-
 	pool.addJob(read_test, std::ref(testfilename), std::ref(queries));
-	
 	Grail grail(std::ref(graph), DIM, pool);
-
 	auto end_label = std::chrono::high_resolution_clock::now();
 
 	/***********************************************
@@ -93,9 +87,7 @@ int main(int argc, char* argv[]) {
 	cout << "Query testing..." << endl;
 
 	auto start_query = std::chrono::high_resolution_clock::now();
-
 	search_reachability(grail, queries,pool);
-
 	auto end_query = std::chrono::high_resolution_clock::now();
 
 	unsigned int size = graph.num_vertices();
@@ -116,7 +108,7 @@ int main(int argc, char* argv[]) {
   	std::size_t gn = filename.find_last_of("/\\");
 	std::size_t tn = testfilename.find_last_of("/\\");
 	cout.setf(std::ios::fixed);
-	cout.precision(3);
+	cout.precision(2);
 	cout << "\n__________________________________________________\n\n" << endl;
 	cout << "GRAIL FILE DATA:" << endl;
 	cout << "||Graph file: " << filename.substr(gn+1) << "||\n||Test file: " <<
@@ -158,7 +150,7 @@ int main(int argc, char* argv[]) {
 	ofstream label(l);
 	print_labeling(label,graph,DIM);
 #endif
-return 0;
+	return 0;
 }
 
 /**
@@ -189,7 +181,7 @@ static void usage() {		// here we must specify which search we want to implement
  *  src trg \n src1 trg1 \n ...
  * @param dim #TRAVERSALS This value is the amount of labels or traversals that the Grail should construct 
  */
-static void parse_args(int argc, char *argv[], std::string &fname, std::string &tfname, int &dim) {
+static void parse_args(int argc, char **argv, std::string &fname, std::string &tfname, int &dim) {
 	if (argc < 3) {	// minimum is ./grail <filename> <testfilename>
 		usage();
 		exit(EXIT_FAILURE);
@@ -201,7 +193,7 @@ static void parse_args(int argc, char *argv[], std::string &fname, std::string &
  	} else {
 		dim = 2;
  		tfname = argv[2];
-	 }
+ 	}
 }
 
 /**
@@ -260,10 +252,10 @@ void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries) {
  * @param trg 
  * @param query_id Query number to access the std::vector of reachability results
  */
-void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, int end) {
+void Wbidirectional(Grail &grail, const std::vector<query> &queries, const int start, const int end) {
 	std::vector<int> visited(grail.getGraph().num_vertices());
 	for (int i=start; i<end; i++)
-		reachability[i] = (grail.bidirectionalReach(queries[i].src, queries[i].trg, i, visited));
+		reachability[i] = grail.bidirectionalReach(queries[i].src, queries[i].trg, i, visited);
 }
 
 /**
@@ -276,8 +268,7 @@ void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, 
  */
 void search_reachability(Grail &grail, const std::vector<query> &queries, ThreadPool &pool) {
 	reachability.resize(queries.size());
-	int begin = 0;
-	int chunk = queries.size() / CHUNK_N;
+	int begin = 0, chunk = queries.size()/CHUNK_N;
 	while(begin < queries.size()) {
 		pool.addJob(Wbidirectional, std::ref(grail), std::ref(queries), begin, begin+chunk);
 		begin += chunk;
@@ -287,17 +278,13 @@ void search_reachability(Grail &grail, const std::vector<query> &queries, Thread
 }
 
 #if GROUND_TRUTH
-void ground_truth_check(std::vector<query>& queries){
-	int i = 0;
-	int success = 0;
-	int fail =0;
-	for(auto &q : queries){
-		if( (q.labels==0 && (reachability[i] == 'f' || reachability[i] == 'n' ))  || ( q.labels==1 && reachability[i] == 'r') )
+void ground_truth_check(const std::vector<query> &queries){
+	int i = 0, success = 0, fail = 0;
+	for(int i =0; i<queries.size(); i++)
+		if( (!queries[i].labels && (reachability[i] == 'f' || reachability[i] == 'n' ))  || ( queries[i].labels && reachability[i] == 'r') )
 			success++;
-		else	
-			fail++;
-		i++;
-	}
+		else fail++;
+	cout.precision(2);
 	cout << "Success rate: " << success/(success+fail)*100 << "%" << endl;
 }
 #endif
