@@ -27,33 +27,31 @@ Grail::~Grail() {}
 
 // compute interval label for each node of tree (pre_order, post_order)
 void Grail::randomlabeling(Graph& tree, unsigned short int labelid) {
+	std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd());
 	std::vector<int> roots = tree.getRoots();
 	std::vector<int>::iterator sit;
 	int pre_post = 0;
 	std::vector<bool> visited(tree.num_vertices(), false);
 
-	std::shuffle(roots.begin(), roots.end(),
-			std::default_random_engine(
-					std::chrono::system_clock::now().time_since_epoch().count()));
+	std::shuffle(roots.begin(), roots.end(),gen);
 
 	for (sit = roots.begin(); sit != roots.end(); sit++)
-		visit(tree, *sit, ++pre_post, visited, labelid);
+		visit(tree, *sit, ++pre_post, visited, labelid, gen);
 }	
 
 // traverse tree to label node with pre and post order by giving a start node
-int Grail::visit(Graph& tree, int vid, int& pre_post, std::vector<bool>& visited, unsigned short int labelid) {
+int Grail::visit(Graph& tree, int vid, int& pre_post, std::vector<bool>& visited, unsigned short int labelid, std::mt19937& gen ) {
 	visited[vid] = true;
 	EdgeList el = tree.out_edges(vid);
 
-	std::shuffle(el.begin(), el.end(),
-				std::default_random_engine(
-						std::chrono::system_clock::now().time_since_epoch().count()));
+	std::shuffle(el.begin(), el.end(),gen);
 
 	EdgeList::iterator eit;
 	int pre_order = tree.num_vertices()+1;
 	for(eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit])
-			pre_order = std::min(pre_order, visit(tree, *eit, pre_post, visited, labelid));
+			pre_order = std::min(pre_order, visit(tree, *eit, pre_post, visited, labelid, gen));
 		else
 			pre_order = std::min(pre_order, tree[*eit].getPre(labelid) );
 	}

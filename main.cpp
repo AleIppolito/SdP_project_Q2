@@ -9,7 +9,6 @@
  */
 
 #include "Grail.h"
-//const int CHUNK = 100000;
 bool isquer = false;		// is queries file in Quer format? = without ground truth
 float graph_time, labeling_time, query_time;
 
@@ -19,6 +18,7 @@ struct query{
 	int labels;
 };
 
+int const CHUNK = 100000;
 std::vector<char> reachability;
 
 /**
@@ -66,7 +66,6 @@ int main(int argc, char* argv[]) {
 
 	auto start_read = std::chrono::high_resolution_clock::now();
 
-	pool.addJob(read_test, std::ref(testfilename), std::ref(queries));
 	Graph graph(filename, pool);
 
 	auto end_read = std::chrono::high_resolution_clock::now();
@@ -77,7 +76,7 @@ int main(int argc, char* argv[]) {
 	cout << "Label construction..." << endl;
 
 	auto start_label = std::chrono::high_resolution_clock::now();
-
+	pool.addJob(read_test, std::ref(testfilename), std::ref(queries));
 	Grail grail(std::ref(graph), DIM, pool);
 
 	auto end_label = std::chrono::high_resolution_clock::now();
@@ -246,7 +245,7 @@ void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, 
 	std::vector<char> localreach;
 	std::vector<int> visited(grail.getGraph().num_vertices());
 	for (int i=start; i<end; i++)
-		reachability[i] = grail.bidirectionalReach(queries[i].src, queries[i].trg, i, std::ref(visited));
+		localreach.push_back(grail.bidirectionalReach(queries[i].src, queries[i].trg, i, std::ref(visited)));
 }
 
 /**
@@ -260,8 +259,8 @@ void Wbidirectional(Grail &grail, const std::vector<query> &queries, int start, 
 void search_reachability(Grail &grail, const std::vector<query> &queries, ThreadPool &pool) {
 	reachability.resize(queries.size());
 	int begin = 0;
-	//int chunk = (CHUNK < queries.size()) ? CHUNK : queries.size();
-	int chunk = queries.size() / CHUNK_N;
+	int chunk = (CHUNK < queries.size()) ? CHUNK : queries.size();
+	//int chunk = queries.size() / CHUNK_N;
 	while(begin < queries.size()) {
 		pool.addJob(Wbidirectional, std::ref(grail), std::ref(queries), begin, begin+chunk);
 		begin += chunk;

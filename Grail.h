@@ -24,7 +24,7 @@ class Grail {
 		Grail(Graph& graph, int dim, ThreadPool&);
 		~Grail();
 
-		static int visit(Graph& tree, int vid, int& pre_post, std::vector<bool>& visited, unsigned short int labelid);
+		static int visit(Graph& , int , int& , std::vector<bool>& , unsigned short int,std::mt19937& );
 		static void randomlabeling(Graph& tree, unsigned short int labelid);
 		Graph& getGraph() const {return g;};
 		char getReachability(int n) {return reachability[n];}
