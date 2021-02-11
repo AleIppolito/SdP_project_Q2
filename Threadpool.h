@@ -26,6 +26,7 @@
 #include <climits>
 #include <random>
 
+#define BIDI false
 #define DEBUG false
 #define GROUND_TRUTH true
 #define CHUNK_N std::thread::hardware_concurrency()
@@ -51,8 +52,7 @@ class ThreadPool {
 		std::vector<std::thread> workers;
 		std::queue<std::function<void()>> tasks;
 		std::mutex queue_mutex;
-		std::condition_variable cv_task;
-		std::condition_variable cv_finished;
+		std::condition_variable cv_task, cv_finished;
 		std::atomic_uint processed;
 		unsigned busy;
 		bool stop;

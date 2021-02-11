@@ -44,7 +44,7 @@ int Grail::visit(Graph& tree, const int vid, int& pre_post, std::vector<bool>& v
 	EdgeList el = tree.out_edges(vid);
 	std::shuffle(el.begin(), el.end(), gen);
 	EdgeList::iterator eit;
-	int pre_order = tree.num_vertices()+1;
+	int pre_order = tree.num_vertices() + 1;
 
 	for(eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit])
@@ -71,10 +71,12 @@ bool Grail::contains(const int src, const int trg) {
 			return false;
 		if(g[src].getPost(i) < g[trg].getPost(i))
 			return false;
+
 	}
 	return true;
 }
 
+#if BIDI
 char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::vector<int> &visited){
 	/*Check trivial cases first: 
 	* src == trg reachable 
@@ -84,7 +86,7 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 
 	if(src == trg) return 'r';
 	if(!contains(src,trg)) return 'n';
-	else if(!g.out_degree(src) |! g.in_degree(trg)) return 'f';
+	if(!g.out_degree(src) |! g.in_degree(trg)) return 'f';
 
 	query_id++;					// 0 = -0
 	std::queue<int> forward;
@@ -123,6 +125,30 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 	}
 	return 'f';
 }
+#else
+char Grail::reach(const int src, const int trg, int query_id, std::vector<int> &visited) {
+	if(src == trg) return 'r';
+
+	if(!contains(src,trg)) return 'n';
+	if(!g.out_degree(src) |! g[trg].hasinList) return 'f';
+
+	visited[src]=++query_id;
+	return go_for_reach(src, trg, query_id, visited);
+}
+
+char Grail::go_for_reach(const int src, const int trg, int query_id, std::vector<int> &visited) {
+	if(src==trg) return 'r';
+
+	visited[src] = query_id;
+	EdgeList el = g.out_edges(src);
+	EdgeList::iterator eit;
+
+	for(eit = el.begin(); eit != el.end(); eit++)
+		if(visited[*eit]!=query_id && contains(*eit,trg))
+			if(go_for_reach(*eit, trg, query_id, visited) == 'r') return 'r';
+	return 'f';
+}
+#endif
 
 /*************************************************************************************
 Helper functions 

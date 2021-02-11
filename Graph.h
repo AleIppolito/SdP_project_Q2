@@ -19,22 +19,34 @@ struct Label{
 	int pre;
 	int post;
 
-	Label(){};
+	Label(){}; // @suppress("Class members should be properly initialized")
 	Label(const int &PRE, const int &POST) : pre(PRE), post(POST){}
 };
 
 struct Node {
 	std::vector<Label> labels;
-	EdgeList inList;
 	EdgeList outList;
+#if BIDI
+	EdgeList inList;
+#else
+	bool hasinList;
+#endif
 
-	Node(){}; 
-	Node(EdgeList in, EdgeList out) : inList(in), outList(out) {} // @suppress("Class members should be properly initialized")
+#if BIDI
+	Node(const EdgeList in, const EdgeList out) : inList(in), outList(out) {} // @suppress("Class members should be properly initialized")
+	Node(){}
+#else
+	Node(const EdgeList out) : hasinList(false), outList(out) {} // @suppress("Class members should be properly initialized")
+	Node() : hasinList(false) {}
+#endif
 
 	Label getLabel(const int &labelid) const {return labels[labelid];}
 	int getPost(const int &labelid) const {return getLabel(labelid).post;}
 	int getPre(const int &labelid) const {return getLabel(labelid).pre;}
 	void setLabel(const int &pre, const int &post, const int &id) {labels[id] = Label(pre, post);}
+#if not BIDI
+	void setinList() {hasinList = true;}
+#endif
 };
 
 typedef std::vector<Node> Gra;
@@ -53,10 +65,14 @@ class Graph {
 
 		EdgeList getRoots() const;
 		EdgeList& out_edges(const int);
+#if BIDI
 		EdgeList& in_edges(const int);
+#endif
 
 		int out_degree(const int);
+#if BIDI
 		int in_degree(const int);
+#endif
 		int num_edges() const;
 		int num_vertices() const;
 		

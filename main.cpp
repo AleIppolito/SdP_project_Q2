@@ -14,7 +14,7 @@ struct query{
 	int src;
 	int trg;
 #if GROUND_TRUTH
-	int labels;
+	int labels = 0;
 #endif
 };
 
@@ -24,7 +24,7 @@ std::vector<char> reachability;
  * @brief Reachability query functions
  */
 void search_reachability(Grail&, const std::vector<query>&, ThreadPool&);
-void Wbidirectional(Grail&, const std::vector<query>&, const int, const int);
+void reachWrapper(Grail&, const std::vector<query>&, const int, const int);
 
 /**
  * @brief Input reading functions
@@ -53,7 +53,6 @@ void ground_truth_check(const std::vector<query>&);
 * Chrono library is used to check on execution time.
 */
 int main(int argc, char **argv) {
-	//auto program_start = std::chrono::high_resolution_clock::now();
 	std::string filename, testfilename;
 	int DIM;
 	std::vector<query> queries;
@@ -64,6 +63,7 @@ int main(int argc, char **argv) {
 	/***********************************************
 	 * @brief GRAPH FILE INPUT READING
 	 */
+
 	cout << "Reading graph..." << endl;
 
 	auto start_read = std::chrono::high_resolution_clock::now();
@@ -73,6 +73,7 @@ int main(int argc, char **argv) {
 	/***********************************************
 	 * @brief GRAIL CONSTRUCTION AND QUERY READ
 	 */
+
 	cout << "Label construction..." << endl;
 
 	auto start_label = std::chrono::high_resolution_clock::now();
@@ -87,7 +88,7 @@ int main(int argc, char **argv) {
 	cout << "Query testing..." << endl;
 
 	auto start_query = std::chrono::high_resolution_clock::now();
-	search_reachability(grail, queries,pool);
+	search_reachability(grail, queries, pool);
 	auto end_query = std::chrono::high_resolution_clock::now();
 
 	unsigned int size = graph.num_vertices();
@@ -96,6 +97,16 @@ int main(int argc, char **argv) {
 	std::chrono::duration<double, std::milli> read_time = end_read - start_read;
 	std::chrono::duration<double, std::milli> label_time = end_label - start_label;
 	std::chrono::duration<double, std::milli> query_time = end_query - start_query;
+
+	/*
+#if BIDI
+	cout << "Bidi " << filename.substr(filename.find_last_of("/")) << ": " << query_time.count() << endl;
+#else
+	cout << filename.substr(filename.find_last_of("/")+1) << ": " << query_time.count() << endl;
+#endif
+
+	return 0;*/
+
 	auto program_time = read_time + label_time + query_time;
 
 
@@ -111,28 +122,28 @@ int main(int argc, char **argv) {
 	cout.precision(2);
 	cout << "\n__________________________________________________\n\n" << endl;
 	cout << "GRAIL FILE DATA:" << endl;
-	cout << "||Graph file: " << filename.substr(gn+1) << "||\n||Test file: " <<
-			testfilename.substr(tn+1) << "||Traversals : " << DIM << endl;
+	cout << "||Graph file:\t" << filename.substr(gn+1) << "\n||Test file:\t" <<
+			testfilename.substr(tn+1) << "\n||Traversals:\t" << DIM << endl;
 	cout << "Graph has " << size << " vertexes and " << edges << " edges.\n" <<
 			"Test done on " << queries.size() << " queries." << endl;
-	cout << "\n#-------------------------#\n" << endl;
+	cout << "\n           #--------------------------#           \n" << endl;
 	cout << "GRAIL TIME REPORT:" << endl;
 	cout << "-Files Read\t" << read_time.count() << " ms\n-Labeling time\t" <<
 			label_time.count()  << " ms\n-Query time\t" << query_time.count() <<
 			" ms\n-TOTAL TIME\t"  << program_time.count() << " ms" << endl;
 	cout << "\n__________________________________________________\n\n" << endl;
 
+#if DEBUG
 	/***********************************************
 	 * @brief Debug code snippet for printing query, graph,
 	 *        reachability and labeling files
 	 * 
 	 */
-#if DEBUG
 	std::string q = "./q";
 	std::string g = "./g";
 	std::string r = "./r";
 	std::string l = "./l";
-	q = q.append(filename.substr(gn+1));
+	q .=append(filename.substr(gn+1));
 	g = g.append(filename.substr(gn+1));
 	r = r.append(filename.substr(gn+1));
 	l = l.append(filename.substr(gn+1));
@@ -148,7 +159,7 @@ int main(int argc, char **argv) {
 	print_query(reach, grail, queries);
 
 	ofstream label(l);
-	print_labeling(label,graph,DIM);
+	print_labeling(label, graph, DIM);
 #endif
 	return 0;
 }
@@ -235,7 +246,7 @@ void read_test(const std::string &tfname, std::vector<query> &queries) {
 void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries) {
 	int i = 0;
 	cout << "Queries solution: " << endl;
-	for (auto &q : queries){
+	for (auto &q : queries) {
 		out << q.src << " " << q.trg << " " << reachability[i] << endl;
 		i++;
 	}
@@ -252,10 +263,14 @@ void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries) {
  * @param trg 
  * @param query_id Query number to access the std::vector of reachability results
  */
-void Wbidirectional(Grail &grail, const std::vector<query> &queries, const int start, const int end) {
+void reachWrapper(Grail &grail, const std::vector<query> &queries, const int start, const int end) {
 	std::vector<int> visited(grail.getGraph().num_vertices());
 	for (int i=start; i<end; i++)
+#if BIDI
 		reachability[i] = grail.bidirectionalReach(queries[i].src, queries[i].trg, i, visited);
+#else
+		reachability[i] = grail.reach(queries[i].src, queries[i].trg, i, visited);
+#endif
 }
 
 /**
@@ -270,7 +285,7 @@ void search_reachability(Grail &grail, const std::vector<query> &queries, Thread
 	reachability.resize(queries.size());
 	int begin = 0, chunk = queries.size()/CHUNK_N;
 	while(begin < queries.size()) {
-		pool.addJob(Wbidirectional, std::ref(grail), std::ref(queries), begin, begin+chunk);
+		pool.addJob(reachWrapper, std::ref(grail), std::ref(queries), begin, begin+chunk);
 		begin += chunk;
 		chunk = (begin+chunk < queries.size()) ? chunk : queries.size()-begin;
 	}

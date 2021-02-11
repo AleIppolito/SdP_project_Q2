@@ -1,7 +1,7 @@
 CC		= g++
 CPPFLAGS	= -Wno-deprecated -c -O3 -pthread -g
 LDFLAGS		= -O3  -pthread
-SOURCES		= main.cpp Graph.cpp Grail.cpp Threadpool.cpp
+SOURCES		= Threadpool.cpp Graph.cpp Grail.cpp main.cpp
 OBJECTS		= $(SOURCES:.cpp=.o)
 EXECUTABLE	= grail
 

@@ -60,11 +60,20 @@ void readChunk(const std::string &file, Gra &gr, const int start, const int end)
 	}
 }
 
+#if BIDI
 void Graph::makeinList(Gra &gra) {
 	for(int i=0; i<gra.size(); i++)
 		for(int &tg : gra[i].outList)
 			gra[tg].inList.push_back(i);
 }
+#else
+void Graph::makeinList(Gra &gra) {
+	for(Node &n : gra)
+		for(int &tg : n.outList)
+			if(!gra[tg].hasinList)
+				gra[tg].setinList();
+}
+#endif
 
 /**
  * @brief Add a vertex (after correctness checks) to the graph
@@ -100,12 +109,13 @@ void Graph::writeGraph(std::ostream& out) {
 
 EdgeList Graph::getRoots() const {
 	EdgeList roots;
-	int i = 0;
-	for(const Node &git : graph) {
-		if (git.inList.size() == 0)
+	for(int i=0; i<graph.size(); i++)
+#if BIDI
+		if(graph[i].inList.size() == 0)
+#else
+		if(!graph[i].hasinList)
+#endif
 			roots.push_back(i);
-		i++;
-	}
 	return roots;
 }
 
@@ -143,11 +153,13 @@ int Graph::num_edges() const {
 
 EdgeList& Graph::out_edges(const int src) {return graph[src].outList;}
 
+#if BIDI
 EdgeList& Graph::in_edges(const int trg) {return graph[trg].inList;}
 
-int Graph::out_degree(const int src) {return graph[src].outList.size();}
-
 int Graph::in_degree(const int trg) {return graph[trg].inList.size();}
+#endif
+
+int Graph::out_degree(const int src) {return graph[src].outList.size();}
 
 void Graph::printGraph() {writeGraph(cout);}
 

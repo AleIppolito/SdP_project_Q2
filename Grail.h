@@ -24,10 +24,13 @@ class Grail {
 		static void randomlabeling(Graph&, const unsigned short);
 		static int visit(Graph&, const int, int&, std::vector<bool>&, const unsigned short, std::mt19937&);
 		bool contains(const int, const int);
+#if BIDI
 		char bidirectionalReach(const int, const int, int, std::vector<int>&);
+#else
+		char reach(const int, const int, int, std::vector<int>&);
+		char go_for_reach(const int, const int, int, std::vector<int>&);
+#endif
 		char getReachability(const int n);
-		//void setReach(const int, const char);
-		//void setReachabilty(const int);
 		Graph& getGraph() const;
 };
 
