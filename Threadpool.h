@@ -26,9 +26,22 @@
 #include <climits>
 #include <random>
 
+/**
+ * @brief Choose whether to use Bidirectional Reach or Basic Reach
+ * 
+ */
 #define BIDI false
 #define DEBUG false
+
+/**
+ * @brief Do the files contain a ground truth? 
+ */
 #define GROUND_TRUTH true
+
+/**
+ * @brief This constant is used in the program to chunkify various operations
+ * so as to maximise usage of each thread 
+ */
 #define CHUNK_N std::thread::hardware_concurrency()
 
 using std::cout;

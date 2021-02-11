@@ -46,10 +46,19 @@ void ground_truth_check(const std::vector<query>&);
 
 // --------------------------------------------------------------------
 
-/* GRAIL WITH CONCURRENT IMPLEMENTATION
-* A threadpool is ran at the start of the execution with a pool size of std::thread::hardware_concurrency()
-* we then use a parse_function to read the input and save it into local variables, all following functions are run by
-* pushing the functions into a task queue from which the threads pop it and runs it.
+/*! \mainpage GRAIL WITH CONCURRENT IMPLEMENTATION
+* \section intro_sec Introduction
+* We use the original paper code " \eGRAIL: A scalable index for reachability queries in very large graphs" by Hilmi Yildirim, Vineet Chaoji
+Mohammed J. Zaki found at https://github.com/zakimjz/grail's to implement a version of the program that runs the reading, labeling and reachability
+checking in a concurrent manner. 
+* \section expl_sec Program explanation
+* A threadpool is ran at the start of the execution with a pool size of std::thread::hardware_concurrency(), during the entire execution these
+* threads wait on a task queue for their next operation, this queue is protected by condition variables latches which allow only one thread at a time
+* to pop a task from the queue. A parse_function reads the input file names and saves it into local variables, all following functions are run by
+* pushing the functions into a task queue from which the threads pop it and runs it. 
+* The graph read uses the file to read the number of vertexes N and gives each thread N/pool_size vertexes to insert into the graph. 
+* The labeling process is run in parallel with each thread executing a traversal
+* The query reachabilty operates much like the graph read where each thread receives query_num/pool_size queries to answer.
 * Chrono library is used to check on execution time.
 */
 int main(int argc, char **argv) {
@@ -97,15 +106,6 @@ int main(int argc, char **argv) {
 	std::chrono::duration<double, std::milli> read_time = end_read - start_read;
 	std::chrono::duration<double, std::milli> label_time = end_label - start_label;
 	std::chrono::duration<double, std::milli> query_time = end_query - start_query;
-
-	/*
-#if BIDI
-	cout << "Bidi " << filename.substr(filename.find_last_of("/")) << ": " << query_time.count() << endl;
-#else
-	cout << filename.substr(filename.find_last_of("/")+1) << ": " << query_time.count() << endl;
-#endif
-
-	return 0;*/
 
 	auto program_time = read_time + label_time + query_time;
 
@@ -186,8 +186,12 @@ static void usage() {		// here we must specify which search we want to implement
  * @param argv 
  * @param fname GRAPH_FILENAME This file should contain a graph with the following structure:
  *  n ->number of vertexes
- *  src : trg1 trg2 trg3 ... #
- *  src : trg1 trg2 trg3 ... # 
+ *  src0 : trg1 trg2 trg3 ... #
+ *  src1 : trg1 trg2 trg3 ... # 
+ *    .
+ *    .
+ *    .
+ *  srcn: ...
  * @param tfname TEST_FILENAME This file should contain a series of queries with the following structure:
  *  src trg \n src1 trg1 \n ...
  * @param dim #TRAVERSALS This value is the amount of labels or traversals that the Grail should construct 
@@ -255,9 +259,10 @@ void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries) {
 
 /**
  * @brief READS THE GRAIL AND STORES IT INTO THE GRAIL OBJECT 
- * This wrapper function allows the threadpool to compute a non-static member function by passing its 
- * Object class as a parameter.
- * 
+ * This function allows the threadpool to compute a non-static member function by passing its 
+ * Object class as a parameter. Each thread runs end-start queries and copies them to their respective
+ * vector position concurrently with other vectors, access is thread safe since each vector chunk does not 
+ * overlap. Reachability is either Bidirectional or Basic Reach 
  * @param grail Grail object
  * @param src 
  * @param trg 
@@ -275,8 +280,8 @@ void reachWrapper(Grail &grail, const std::vector<query> &queries, const int sta
 
 /**
  * @brief This wrapper function handles iteration over all of the queries. It takes
- * a chunk of queries defined as a constant and hands each chunk to the task pool.
- * Best results with high chunk value circa 100000
+ * a chunk of queries and hands each chunk to the task pool. Each thread then executes this task
+ * and accesses the global vector 'reachability' concurrently. 
  * @param grail Grail object
  * @param queries Query vector with all queries from TEST_FILENAME
  * @param pool Threadpool reference used to launch each query search
@@ -293,6 +298,13 @@ void search_reachability(Grail &grail, const std::vector<query> &queries, Thread
 }
 
 #if GROUND_TRUTH
+/**
+ * @brief If a ground truth is present then we need to check the actual result of
+ * our reachability report and we use this function to find successes and fails 
+ * and then print out a percentage of successes.
+ * 
+ * @param queries 
+ */
 void ground_truth_check(const std::vector<query> &queries){
 	int i = 0, success = 0, fail = 0;
 	for(int i =0; i<queries.size(); i++)

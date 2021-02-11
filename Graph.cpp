@@ -60,6 +60,12 @@ void readChunk(const std::string &file, Gra &gr, const int start, const int end)
 	}
 }
 
+/**
+ * @brief These functions make sure that we can find the roots in the labeling and in both reachability
+ * algorithms, however reach does not require an inList to be maintained so a bool is saved to find which
+ * nodes do not have ancestors (are Roots), this saves memory.
+ * 
+ */
 #if BIDI
 void Graph::makeinList(Gra &gra) {
 	for(int i=0; i<gra.size(); i++)
@@ -70,7 +76,7 @@ void Graph::makeinList(Gra &gra) {
 void Graph::makeinList(Gra &gra) {
 	for(Node &n : gra)
 		for(int &tg : n.outList)
-			if(!gra[tg].hasinList)
+			if(!gra[tg].isRoot)
 				gra[tg].setinList();
 }
 #endif
@@ -92,7 +98,7 @@ void Graph::addVertex(const int &vid) {
 
 /**
  * @brief Generic graph write function, used for debugging to print out
- * the graph to an ostream
+ * the graph to an ostream 
  * 
  * @param out 
  */
@@ -107,13 +113,20 @@ void Graph::writeGraph(std::ostream& out) {
 	}
 }
 
+/**
+ * @brief Function used to start the labeling, it returns the roots as an Edgelist
+ * and has 2 different implementations in case of Bidireacional (where we keep an inlist) or 
+ * basic search (where we keep a boolean)
+ * 
+ * @return EdgeList 
+ */
 EdgeList Graph::getRoots() const {
 	EdgeList roots;
 	for(int i=0; i<graph.size(); i++)
 #if BIDI
 		if(graph[i].inList.size() == 0)
 #else
-		if(!graph[i].hasinList)
+		if(!graph[i].isRoot)
 #endif
 			roots.push_back(i);
 	return roots;
@@ -151,7 +164,7 @@ int Graph::num_edges() const {
 	return num;
 }
 
-EdgeList& Graph::out_edges(const int src) {return graph[src].outList;}
+int Graph::num_vertices() const {return graph.size();}
 
 #if BIDI
 EdgeList& Graph::in_edges(const int trg) {return graph[trg].inList;}
@@ -159,10 +172,10 @@ EdgeList& Graph::in_edges(const int trg) {return graph[trg].inList;}
 int Graph::in_degree(const int trg) {return graph[trg].inList.size();}
 #endif
 
+EdgeList& Graph::out_edges(const int src) {return graph[src].outList;}
+
 int Graph::out_degree(const int src) {return graph[src].outList.size();}
 
 void Graph::printGraph() {writeGraph(cout);}
-
-int Graph::num_vertices() const {return graph.size();}
 
 void Graph::clear() {graph.clear();}

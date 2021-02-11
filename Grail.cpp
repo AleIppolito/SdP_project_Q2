@@ -10,6 +10,15 @@
 
 #include "Grail.h"
 
+/**
+ * @brief Construct a new Grail:: Grail object, each node has a vector of labels which
+ * are now resized to meet the required traversal number, then each labeling is given
+ * as a task to the threadpool and the main thread waits.
+ * 
+ * @param graph 
+ * @param Dim 
+ * @param pool 
+ */
 Grail::Grail(Graph& graph, const int Dim ,ThreadPool& pool): g(graph), dim(Dim) {
 	int i;
 	for(i=0; i<g.num_vertices(); i++)
@@ -25,7 +34,13 @@ Grail::~Grail() {}
  * Labeling Functions
  ****************************************************************/
 
-// compute interval label for each node of tree (pre_order, post_order)
+/**
+ * @brief Wrapper function that starts a post order visit from each root, each root is
+ * chosen randomly.
+ * 
+ * @param tree 
+ * @param labelid 
+ */
 void Grail::randomlabeling(Graph& tree, const unsigned short labelid) {
 	std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd());
@@ -38,7 +53,18 @@ void Grail::randomlabeling(Graph& tree, const unsigned short labelid) {
 		visit(tree, *sit, ++pre_post, visited, labelid, gen);
 }	
 
-// traverse tree to label node with pre and post order by giving a start node
+/**
+ * @brief Basic visit, the tree is visited from vid randomly in a post order
+ * traversal
+ * 
+ * @param tree 
+ * @param vid 
+ * @param pre_post 
+ * @param visited 
+ * @param labelid 
+ * @param gen 
+ * @return int 
+ */
 int Grail::visit(Graph& tree, const int vid, int& pre_post, std::vector<bool>& visited, const unsigned short labelid, std::mt19937 &gen) {
 	visited[vid] = true;
 	EdgeList el = tree.out_edges(vid);
@@ -62,8 +88,8 @@ int Grail::visit(Graph& tree, const int vid, int& pre_post, std::vector<bool>& v
 GRAIL Query Functions
 *************************************************************************************/
 /*
- * This function checks that src node is contained by trg node by checking for each
- * the exception
+ * This function checks that src node is contained by trg node by checking each label for
+ * an exception
  */
 bool Grail::contains(const int src, const int trg) {
 	for(int i=0;i<dim;i++) {
@@ -77,16 +103,30 @@ bool Grail::contains(const int src, const int trg) {
 }
 
 #if BIDI
+/**
+ * @brief Bidirectional Reach answers reachability queries by first checking trivial cases and then
+ * exploring the graph from 2 positions, target and source. Each iteration of the while expands the forward
+ * or backward frontier both of which label they path until either of 3 conditions happen
+ * ->Forward frontier encounters a backwards labeled path
+ * ->Backwards frontier encounters a forward labeled path
+ * ->Forward/Backward frontiers has completely expanded and src/trg hasn't found trg/src (false positive)
+ * 
+ * @param src 
+ * @param trg 
+ * @param query_id 
+ * @param visited 
+ * @return char 
+ */
 char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::vector<int> &visited){
 	/*Check trivial cases first: 
 	* src == trg reachable 
 	* src has no children or trg has no parents then reachability is impossible
-	* src does not contain trg then it's not reachable
+	* src does not contain trg then it's not reachable 
 	*/
 
 	if(src == trg) return 'r';
 	if(!contains(src,trg)) return 'n';
-	if(!g.out_degree(src) |! g.in_degree(trg)) return 'f';
+	if(!g.out_degree(src) || !g.in_degree(trg)) return 'f';
 
 	query_id++;					// 0 = -0
 	std::queue<int> forward;
@@ -126,11 +166,21 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 	return 'f';
 }
 #else
+/**
+ * @brief Basic Reach, explores the trivial cases first and then starts a dfs that exits when src finds target or
+ * src doesn't find target (false positive)
+ * 
+ * @param src 
+ * @param trg 
+ * @param query_id 
+ * @param visited 
+ * @return char 
+ */
 char Grail::reach(const int src, const int trg, int query_id, std::vector<int> &visited) {
 	if(src == trg) return 'r';
 
 	if(!contains(src,trg)) return 'n';
-	if(!g.out_degree(src) |! g[trg].hasinList) return 'f';
+	if(!g.out_degree(src) || !g[trg].isRoot) return 'f';
 
 	visited[src]=++query_id;
 	return go_for_reach(src, trg, query_id, visited);

@@ -12,7 +12,10 @@
 #define GRAIL_H_
 
 #include "Graph.h"
-		
+/**
+ * @brief Class Grail
+ * Contains a pointer to graph and number of labelings 
+ */
 class Grail {
 	private:
 		Graph& g;

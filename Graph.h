@@ -12,9 +12,13 @@
 #define GRAPH_H_
 
 #include "Threadpool.h"
-
+/**
+ * @brief Used as alias for a vector of edges 
+ */
 typedef std::vector<int> EdgeList;		// edge list represented by vertex id list
-
+/**
+ * @brief Label struct for keeping pre and post order labels 
+ */
 struct Label{
 	int pre;
 	int post;
@@ -23,34 +27,43 @@ struct Label{
 	Label(const int &PRE, const int &POST) : pre(PRE), post(POST){}
 };
 
+/**
+ * @brief Node struct
+ * keeps vertex data such as labels outEdges and inEdges
+ */
 struct Node {
 	std::vector<Label> labels;
 	EdgeList outList;
 #if BIDI
 	EdgeList inList;
 #else
-	bool hasinList;
+	bool isRoot;
 #endif
 
 #if BIDI
 	Node(const EdgeList in, const EdgeList out) : inList(in), outList(out) {} // @suppress("Class members should be properly initialized")
 	Node(){}
 #else
-	Node(const EdgeList out) : hasinList(false), outList(out) {} // @suppress("Class members should be properly initialized")
-	Node() : hasinList(false) {}
+	Node(const EdgeList out) : isRoot(false), outList(out) {} // @suppress("Class members should be properly initialized")
+	Node() : isRoot(false) {}
+	void setinList() {isRoot = true;}
 #endif
 
 	Label getLabel(const int &labelid) const {return labels[labelid];}
 	int getPost(const int &labelid) const {return getLabel(labelid).post;}
 	int getPre(const int &labelid) const {return getLabel(labelid).pre;}
 	void setLabel(const int &pre, const int &post, const int &id) {labels[id] = Label(pre, post);}
-#if not BIDI
-	void setinList() {hasinList = true;}
-#endif
 };
 
+/**
+ * @brief GRA is used as an alias for a vector or vertexes 
+ */
 typedef std::vector<Node> Gra;
 
+/**
+ * @brief Class Graph
+ * Contains a vector of vertexes and a number of labelings 
+ */
 class Graph {
 	private:
 		int dim;
