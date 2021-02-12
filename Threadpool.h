@@ -30,8 +30,8 @@
  * @brief Choose whether to use Bidirectional Reach or Basic Reach
  * 
  */
-#define BIDI false
-#define DEBUG false
+#define BIDI true
+#define DEBUG true
 
 /**
  * @brief Do the files contain a ground truth? 

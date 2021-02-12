@@ -76,7 +76,7 @@ void Graph::makeinList(Gra &gra) {
 void Graph::makeinList(Gra &gra) {
 	for(Node &n : gra)
 		for(int &tg : n.outList)
-			if(!gra[tg].isRoot)
+			if(gra[tg].isRoot)
 				gra[tg].setinList();
 }
 #endif
@@ -103,7 +103,6 @@ void Graph::addVertex(const int &vid) {
  * @param out 
  */
 void Graph::writeGraph(std::ostream& out) {
-	cout << "Graph size = " << graph.size() << endl;
 	out << graph.size() << endl;
 	for (int i = 0; i < graph.size(); i++) {
 		out << i << ": ";
@@ -126,7 +125,7 @@ EdgeList Graph::getRoots() const {
 #if BIDI
 		if(graph[i].inList.size() == 0)
 #else
-		if(!graph[i].isRoot)
+		if(graph[i].isRoot)
 #endif
 			roots.push_back(i);
 	return roots;

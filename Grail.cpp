@@ -213,7 +213,6 @@ Helper functions
  */
 void print_labeling(std::ostream &out, Graph &g, const int dim) {
 	for(int i=0; i<dim; i++){
-		out << "Printing labeling " << i << endl;
 		for(int j = 0; j < g.num_vertices();j++){
 			out << j << " " << g[j].getPre(i) << " " << g[j].getPost(i) << endl; 
 		}

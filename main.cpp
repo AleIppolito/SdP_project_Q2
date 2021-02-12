@@ -37,7 +37,8 @@ void read_test(const std::string&, std::vector<query>&);
 static void parse_args(int, char **, std::string&, std::string&, int&);
 static void usage();
 #if DEBUG
-void print_query(std::ostream &, Grail &, std::vector<query> &);
+void print_query(std::ostream &, std::vector<query> &);
+void print_reach(std::ostream &, Grail &, std::vector<query> &);
 #endif
 
 #if GROUND_TRUTH
@@ -139,27 +140,25 @@ int main(int argc, char **argv) {
 	 *        reachability and labeling files
 	 * 
 	 */
-	std::string q = "./q";
-	std::string g = "./g";
-	std::string r = "./r";
-	std::string l = "./l";
-	q .=append(filename.substr(gn+1));
-	g = g.append(filename.substr(gn+1));
-	r = r.append(filename.substr(gn+1));
-	l = l.append(filename.substr(gn+1));
-	ofstream qout(q);
-	cout << "print_queries_and_nodes" << endl;
-	for(query &q: queries)
-		qout << q.src << " " << q.trg << " " << q.labels << endl;
+	std::string printpath = "./";
+	if(std::system("mkdir -p report") == 0)
+		printpath.append("report/");
+	else
+		cout << "Could not create report folder...";
 
-	ofstream gout(g);
+	printpath.append(filename.substr(0, filename.find(".")));
+	std::string queryfile, labelfile, reachfile, graphfile;
+	queryfile = labelfile = reachfile = graphfile = printpath;
+
+	ofstream qout(queryfile.append(".query"));
+	ofstream gout(graphfile.append(".graph"));
+	ofstream rout(reachfile.append(".reach"));
+	ofstream lout(labelfile.append(".label"));
+
+	print_query(qout, queries);
 	graph.writeGraph(gout);
-
-	ofstream reach(r);
-	print_query(reach, grail, queries);
-
-	ofstream label(l);
-	print_labeling(label, graph, DIM);
+	print_reach(rout, grail, queries);
+	print_labeling(lout, graph, DIM);
 #endif
 	return 0;
 }
@@ -240,6 +239,14 @@ void read_test(const std::string &tfname, std::vector<query> &queries) {
 }
 
 #if DEBUG
+void print_query(std::ostream &out, std::vector<query> &que) {
+	for(query &q: que)
+#if GROUND_TRUTH
+		out << q.src << " " << q.trg << " " << q.labels << endl;
+#else
+		out << q.src << " " << q.trg << endl;
+#endif
+}
 /**
  * @brief Debugging function, prints the queries 
  * 
@@ -247,13 +254,9 @@ void read_test(const std::string &tfname, std::vector<query> &queries) {
  * @param grail Grail object that contains the reachability result
  * @param queries queries std::vector of query struct 
  */
-void print_query(std::ostream &out, Grail &grail, std::vector<query> &queries) {
-	int i = 0;
-	cout << "Queries solution: " << endl;
-	for (auto &q : queries) {
-		out << q.src << " " << q.trg << " " << reachability[i] << endl;
-		i++;
-	}
+void print_reach(std::ostream &out, Grail &grail, std::vector<query> &queries) {
+	for (int i=0; i<queries.size(); i++)
+		out << queries[i].src << " " << queries[i].trg << " " << reachability[i] << endl;
 }
 #endif
 

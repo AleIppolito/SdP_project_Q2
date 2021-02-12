@@ -44,9 +44,9 @@ struct Node {
 	Node(const EdgeList in, const EdgeList out) : inList(in), outList(out) {} // @suppress("Class members should be properly initialized")
 	Node(){}
 #else
-	Node(const EdgeList out) : isRoot(false), outList(out) {} // @suppress("Class members should be properly initialized")
-	Node() : isRoot(false) {}
-	void setinList() {isRoot = true;}
+	Node(const EdgeList out) : isRoot(true), outList(out) {} // @suppress("Class members should be properly initialized")
+	Node() : isRoot(true) {}
+	void setinList() {isRoot = false;}
 #endif
 
 	Label getLabel(const int &labelid) const {return labels[labelid];}
