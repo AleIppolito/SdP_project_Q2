@@ -1,6 +1,6 @@
 ****************************************************************************************************************
 *******************************************   GRAIL (multithreaded)   ******************************************
-*************************  Authors: Federico MARESCA, Alessandro IPPOLITO, Galib ALILI  ************************
+*******************************  Authors: Federico MARESCA, Alessandro IPPOLITO.  ******************************
 ****************************************************************************************************************
 
 ################################################################################################################
@@ -30,19 +30,18 @@ Description:
   -h              Optional, print this help message.
   <filename>      The name of the input graph in gra format.
   dim             Optional, set the number of traversals to be performed. The default value is 2.
-  Algorithm type: Bidirectional Search.
+  Algorithm type: Bidirectional Search. -> o alla fine abbiamo adottato la DFS normale?
   Labeling type:  Completely randomized traversals.  
                       
 INPUT GRAPH FORMAT: (see sample.gra)
 Note: First line gives the number of nodes n. The node ids should be in [0,n-1].
 
-TEST FILE FORMAT: (see sample.test)
+TEST FILE FORMAT: (see sample.que)
 If the file is in "Quer" format (means no ground truth):
   - Each line contains tuple (<source> <target>)
 If the file is in standard format:
   - Each line contains triples (<source> <target> <reachability>)
   - The program compares its output with <reachability> value of each query and prints a success ratio which is supposed to be 1.
-    However if you dont know the ground truth, (i.e. for very large graphs) you can give any value for <reachability> and ignore the success ratio.
 
 Selection of Dimensionality:
 For sparse graphs (avg. degree up to 3): dim 2 is quite optimal.
