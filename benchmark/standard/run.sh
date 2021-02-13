@@ -1,6 +1,8 @@
+mkdir -p report
 for var in ./testfiles/*.gra; do
-tmp=${var%.*}	# remove extension
-echo ${tmp##*/}	# print just name, not the path
-../../grail "$tmp.gra" 5 "$tmp.que" >> standard.report
-#valgrind --tool=massif ../../grail "$tmp.gra" 5 "$tmp.que" >> standard.report
+noext=${var%.*}	# remove extension
+nopre=${noext##*/} 	# keep just name, remove path
+#echo "$nopre"
+#../../grail "$noext.gra" 5 "$noext.que" >> standard.report
+valgrind --tool=massif --massif-out-file=./report/"$nopre.massif" ../../grail "$noext.gra" 5 "$noext.que" >> standard.report
 done
