@@ -37,8 +37,9 @@ void read_test(const std::string&, std::vector<query>&);
 static void parse_args(int, char **, std::string&, std::string&, int&);
 static void usage();
 #if DEBUG
-void print_query(std::ostream &, std::vector<query> &);
-void print_reach(std::ostream &, Grail &, std::vector<query> &);
+void print_graph(std::ostream&, Graph&);
+void print_query(std::ostream&, std::vector<query>&);
+void print_reach(std::ostream&, Grail&, std::vector<query>&);
 #endif
 
 #if GROUND_TRUTH
@@ -101,19 +102,20 @@ int main(int argc, char **argv) {
 	search_reachability(grail, queries, pool);
 	auto end_query = std::chrono::high_resolution_clock::now();
 
-	unsigned int size = graph.num_vertices();
-	unsigned int edges = graph.num_edges();
-
 	std::chrono::duration<double, std::milli> read_time = end_read - start_read;
 	std::chrono::duration<double, std::milli> label_time = end_label - start_label;
 	std::chrono::duration<double, std::milli> query_time = end_query - start_query;
 
 	auto program_time = read_time + label_time + query_time;
 
-
 #if GROUND_TRUTH
 	ground_truth_check(queries);
 #endif
+
+	unsigned qsize = queries.size();
+	unsigned gsize = graph.num_vertices();
+	unsigned edges = graph.num_edges();
+
 	/***********************************************
 	 * @brief String arithmetic to get file names from path
 	 */
@@ -125,8 +127,8 @@ int main(int argc, char **argv) {
 	cout << "GRAIL FILE DATA:" << endl;
 	cout << "||Graph file:\t" << filename.substr(gn+1) << "\n||Test file:\t" <<
 			testfilename.substr(tn+1) << "\n||Traversals:\t" << DIM << endl;
-	cout << "Graph has " << size << " vertexes and " << edges << " edges.\n" <<
-			"Test done on " << queries.size() << " queries." << endl;
+	cout << "Graph has " << gsize << " vertexes and " << edges << " edges.\n" <<
+			"Test done on " << qsize << " queries." << endl;
 	cout << "\n           #--------------------------#           \n" << endl;
 	cout << "GRAIL TIME REPORT:" << endl;
 	cout << "-Files Read\t" << read_time.count() << " ms\n-Labeling time\t" <<
@@ -135,31 +137,26 @@ int main(int argc, char **argv) {
 	cout << "\n__________________________________________________\n\n" << endl;
 
 #if DEBUG
-	/***********************************************
-	 * @brief Debug code snippet for printing query, graph,
-	 *        reachability and labeling files
-	 * 
-	 */
-	std::string printpath = "./";
+	std::string printpath = "./", queryfile, labelfile, reachfile, graphfile;
 	if(std::system("mkdir -p report") == 0)
 		printpath.append("report/");
 	else
 		cout << "Could not create report folder...";
-
 	printpath.append(filename.substr(0, filename.find(".")));
-	std::string queryfile, labelfile, reachfile, graphfile;
 	queryfile = labelfile = reachfile = graphfile = printpath;
 
-	ofstream qout(queryfile.append(".query"));
 	ofstream gout(graphfile.append(".graph"));
-	ofstream rout(reachfile.append(".reach"));
+	ofstream qout(queryfile.append(".query"));
 	ofstream lout(labelfile.append(".label"));
+	ofstream rout(reachfile.append(".reach"));
 
-	print_query(qout, queries);
-	graph.writeGraph(gout);
-	print_reach(rout, grail, queries);
-	print_labeling(lout, graph, DIM);
+	pool.addJob(print_graph, std::ref(gout), std::ref(graph));
+	pool.addJob(print_query, std::ref(qout), std::ref(queries));
+	pool.addJob(print_labeling, std::ref(lout), std::ref(graph), DIM);
+	pool.addJob(print_reach, std::ref(rout), std::ref(grail), std::ref(queries));
+	pool.waitFinished();
 #endif
+
 	return 0;
 }
 
@@ -201,10 +198,10 @@ static void parse_args(int argc, char **argv, std::string &fname, std::string &t
 		exit(EXIT_FAILURE);
 	}
  	fname = argv[1];
- 	if(isdigit(*argv[2])) {
+ 	if(isdigit(*argv[2])) {		// ./grail sample.gra 5 sample.que
  		dim = atoi(argv[2]);
  		tfname = argv[3];
- 	} else {
+ 	} else {					// ./grail sample.gra sample.que
 		dim = 2;
  		tfname = argv[2];
  	}
@@ -239,6 +236,10 @@ void read_test(const std::string &tfname, std::vector<query> &queries) {
 }
 
 #if DEBUG
+void print_graph(std::ostream &out, Graph &gr) {
+	gr.writeGraph(out);
+}
+
 void print_query(std::ostream &out, std::vector<query> &que) {
 	for(query &q: que)
 #if GROUND_TRUTH
@@ -247,6 +248,7 @@ void print_query(std::ostream &out, std::vector<query> &que) {
 		out << q.src << " " << q.trg << endl;
 #endif
 }
+
 /**
  * @brief Debugging function, prints the queries 
  * 
