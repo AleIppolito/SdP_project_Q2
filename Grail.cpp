@@ -19,12 +19,13 @@
  * @param Dim 
  * @param pool 
  */
-Grail::Grail(Graph& graph, const int Dim ,ThreadPool& pool): g(graph), dim(Dim) {
+Grail::Grail(Graph& graph, const int Dim ,const std::string testfilename, ThreadPool& pool): g(graph), dim(Dim) {
 	int i;
+	pool.addJob( [this,testfilename] { readQueries(testfilename) ;} );
 	for(i=0; i<g.num_vertices(); i++)
 		graph[i].labels.resize(dim);
 	for(i=0; i<dim; i++)
-		pool.addJob(randomlabeling, std::ref(graph), i);
+		pool.addJob( [this, i] { randomlabeling(i); } );
 	pool.waitFinished();
 }
 
@@ -41,16 +42,16 @@ Grail::~Grail() {}
  * @param tree 
  * @param labelid 
  */
-void Grail::randomlabeling(Graph& tree, const unsigned short labelid) {
+void Grail::randomlabeling(const unsigned short labelid) {
 	std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd());
-	EdgeList roots = tree.getRoots();
+	EdgeList roots = g.getRoots();
 	EdgeList::iterator sit;
 	int pre_post = 0;
-	std::vector<bool> visited(tree.num_vertices(), false);
+	std::vector<bool> visited(g.num_vertices(), false);
 	std::shuffle(roots.begin(), roots.end(), gen);
 	for (sit = roots.begin(); sit != roots.end(); sit++)
-		visit(tree, *sit, ++pre_post, visited, labelid, gen);
+		visit(*sit, ++pre_post, visited, labelid, gen);
 }	
 
 /**
@@ -65,21 +66,21 @@ void Grail::randomlabeling(Graph& tree, const unsigned short labelid) {
  * @param gen 
  * @return int 
  */
-int Grail::visit(Graph& tree, const int vid, int& pre_post, std::vector<bool>& visited, const unsigned short labelid, std::mt19937 &gen) {
+int Grail::visit(const int vid, int& pre_post, std::vector<bool>& visited, const unsigned short labelid, std::mt19937 &gen) {
 	visited[vid] = true;
-	EdgeList el = tree.out_edges(vid);
+	EdgeList el = g.out_edges(vid);
 	std::shuffle(el.begin(), el.end(), gen);
 	EdgeList::iterator eit;
-	int pre_order = tree.num_vertices() + 1;
+	int pre_order = g.num_vertices() + 1;
 
 	for(eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit])
-			pre_order = std::min(pre_order, visit(tree, *eit, pre_post, visited, labelid, gen));
+			pre_order = std::min(pre_order, visit(*eit, pre_post, visited, labelid, gen));
 		else
-			pre_order = std::min(pre_order, tree[*eit].getPre(labelid) );
+			pre_order = std::min(pre_order, g[*eit].getPre(labelid) );
 	}
 	pre_order = std::min(pre_order, pre_post);
-	tree[vid].setLabel(pre_order, pre_post, labelid);
+	g[vid].setLabel(pre_order, pre_post, labelid);
 	pre_post++;
 	return pre_order;
 }
@@ -124,9 +125,12 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 	* src does not contain trg then it's not reachable 
 	*/
 
-	if(src == trg) return 'r';
-	if(!contains(src,trg)) return 'n';
-	if(!g.out_degree(src) || !g.in_degree(trg)) return 'f';
+	if( src == trg )
+		return 'r'; 
+	if( !contains(src,trg) )
+		return 'n';
+	if( !g.out_degree(src) || !g.in_degree(trg) )
+		return 'f';
 
 	query_id++;					// 0 = -0
 	std::queue<int> forward;
@@ -147,8 +151,9 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 		el = g.out_edges(next);
 
 		for (ei = el.begin(); ei != el.end(); ei++)
-			if(visited[*ei]==-query_id) return 'r';
-			else if(visited[*ei]!=query_id && contains(*ei,trg)) {
+			if(visited[*ei]==-query_id){
+				return 'r';
+			}else if(visited[*ei]!=query_id && contains(*ei,trg)) {
 				forward.push(*ei);
 				visited[*ei] = query_id;
 			}
@@ -157,13 +162,14 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 		backward.pop();
 		el = g.in_edges(next);
 		for (ei = el.begin(); ei != el.end(); ei++)
-			if(visited[*ei]==query_id) return 'r';
+			if(visited[*ei]==query_id)
+				return 'r';
 			else if(visited[*ei]!=-query_id && contains(src,*ei)) {
 				backward.push(*ei);
 				visited[*ei]=-query_id;
-			}
+				}
 	}
-	return 'f';
+return 'f';
 }
 #else
 /**
@@ -204,6 +210,33 @@ char Grail::go_for_reach(const int src, const int trg, int query_id, std::vector
 Helper functions 
 *************************************************************************************/
 
+Graph& Grail::getGraph() const {return g;};
+
+
+void Grail::setReachability(const int size){
+	reachability.resize(size);
+}
+
+#if GROUND_TRUTH
+/**
+ * @brief If a ground truth is present then we need to check the actual result of
+ * our reachability report and we use this function to find successes and fails 
+ * and then print out a percentage of successes.
+ * 
+ * @param queries 
+ */
+void Grail::ground_truth_check(std::ostream& out){
+	int i = 0, success = 0, fail = 0;
+	for(int i =0; i<queries.size(); i++)
+		if( (!queries[i].labels && (reachability[i] == 'f' || reachability[i] == 'n' ))  || ( queries[i].labels && reachability[i] == 'r') )
+			success++;
+		else fail++;
+	out.precision(2);
+	out << "Success rate: " << success/(success+fail)*100 << "%" << endl;
+}
+#endif
+
+
 /**
  * @brief Printing function for debugging purposes, prints the labeling for each node
  * 
@@ -211,7 +244,7 @@ Helper functions
  * @param g 
  * @param dim 
  */
-void print_labeling(std::ostream &out, Graph &g, const int dim) {
+void Grail::print_labeling(std::ostream &out) {
 	for(int i=0; i<dim; i++){
 		for(int j = 0; j < g.num_vertices();j++){
 			out << j << " " << g[j].getPre(i) << " " << g[j].getPost(i) << endl; 
@@ -219,4 +252,74 @@ void print_labeling(std::ostream &out, Graph &g, const int dim) {
 	}
 }
 
-Graph& Grail::getGraph() const {return g;};
+
+void Grail::print_query(std::ostream &out) {
+	for(query &q: queries)
+	#if GROUND_TRUTH
+			out << q.src << " " << q.trg << " " << q.labels << endl;
+	#else
+			out << q.src << " " << q.trg << endl;
+	#endif
+}
+
+/**
+ * @brief Debugging function, prints the queries 
+ * 
+ * @param out ostream object as ouput
+ * @param grail Grail object that contains the reachability result
+ * @param queries queries std::vector of query struct 
+ */
+void Grail::print_reach(std::ostream &out) {
+	for (int i=0; i<queries.size(); i++)
+		out << queries[i].src << " " << queries[i].trg << " " << reachability[i] << endl;
+}
+
+/**
+ * @brief This function reads TEST_FILENAME and saves the queries in a std::vector of queries, a struct
+ * that contains 2 integers (src,trg)
+ * File structure required:
+ *  src  trg opt(label)
+ * 	int  int 
+ * 	int  int 
+ *  ...  ...
+ * @param tfname TEST_FILENAME
+ * @param queries Query vector
+ */
+void Grail::readQueries(const std::string &testFileName) {
+	int src,trg;
+	ifstream fstr(testFileName);
+	if (!fstr) {
+		cout << "Error: Cannot open " << testFileName << endl;
+		exit(EXIT_FAILURE);
+	}
+	#if GROUND_TRUTH
+		int label;
+			while(fstr >> src >> trg >> label)
+				queries.push_back({src, trg, label});
+	#else
+			while(fstr >> src >> trg)
+				queries.push_back({src, trg});
+	#endif
+}
+
+
+/**
+ * @brief READS THE GRAIL AND STORES IT INTO THE GRAIL OBJECT 
+ * This function allows the threadpool to compute a non-static member function by passing its 
+ * Object class as a parameter. Each thread runs end-start queries and copies them to their respective
+ * vector position concurrently with other vectors, access is thread safe since each vector chunk does not 
+ * overlap. Reachability is either Bidirectional or Basic Reach 
+ * @param grail Grail object
+ * @param src 
+ * @param trg 
+ * @param query_id Query number to access the std::vector of reachability results
+ */
+void Grail::reachWrapper(int start, int end) {
+	std::vector<int> visited(g.num_vertices());
+	for (int i=start; i<end; i++)
+#if BIDI
+		reachability[i] = bidirectionalReach(queries[i].src, queries[i].trg, i, visited);
+#else
+		reachability[i] = reach(queries[i].src, queries[i].trg, i, visited);
+#endif
+}

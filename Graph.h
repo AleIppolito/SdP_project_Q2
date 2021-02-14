@@ -66,7 +66,6 @@ typedef std::vector<Node> Gra;
  */
 class Graph {
 	private:
-		int dim;
 		Gra graph;
 	public:
 		Graph();

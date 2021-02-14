@@ -10,41 +10,19 @@
 
 #include "Grail.h"
 
-struct query{
-	int src;
-	int trg;
-#if GROUND_TRUTH
-	int labels = 0;
-#endif
-};
-
-std::vector<char> reachability;
-
 /**
  * @brief Reachability query functions
  */
-void search_reachability(Grail&, const std::vector<query>&, ThreadPool&);
-void reachWrapper(Grail&, const std::vector<query>&, const int, const int);
-
-/**
- * @brief Input reading functions
- */
-void read_test(const std::string&, std::vector<query>&);
+void search_reachability(Grail&,  ThreadPool&);
+//void reachWrapper(Grail&, const std::vector<query>&, const int, const int);
 
 /**
  * @brief Helper functions
  */
 static void parse_args(int, char **, std::string&, std::string&, int&);
 static void usage();
-#if DEBUG
-void print_graph(std::ostream&, Graph&);
-void print_query(std::ostream&, std::vector<query>&);
-void print_reach(std::ostream&, Grail&, std::vector<query>&);
-#endif
 
-#if GROUND_TRUTH
-void ground_truth_check(const std::vector<query>&);
-#endif
+void print_graph(std::ostream&, Graph&);
 
 // --------------------------------------------------------------------
 
@@ -66,7 +44,6 @@ checking in a concurrent manner.
 int main(int argc, char **argv) {
 	std::string filename, testfilename;
 	int DIM;
-	std::vector<query> queries;
 	ThreadPool pool;
 
 	parse_args(argc, argv, filename, testfilename, DIM);
@@ -88,8 +65,7 @@ int main(int argc, char **argv) {
 	cout << "Label construction..." << endl;
 
 	auto start_label = std::chrono::high_resolution_clock::now();
-	pool.addJob(read_test, std::ref(testfilename), std::ref(queries));
-	Grail grail(std::ref(graph), DIM, pool);
+	Grail grail(std::ref(graph), DIM,testfilename, pool);
 	auto end_label = std::chrono::high_resolution_clock::now();
 
 	/***********************************************
@@ -99,7 +75,7 @@ int main(int argc, char **argv) {
 	cout << "Query testing..." << endl;
 
 	auto start_query = std::chrono::high_resolution_clock::now();
-	search_reachability(grail, queries, pool);
+	search_reachability(grail, pool);
 	auto end_query = std::chrono::high_resolution_clock::now();
 
 	std::chrono::duration<double, std::milli> read_time = end_read - start_read;
@@ -109,24 +85,24 @@ int main(int argc, char **argv) {
 	auto program_time = read_time + label_time + query_time;
 
 #if GROUND_TRUTH
-	ground_truth_check(queries);
+	grail.ground_truth_check(cout);
 #endif
 
-	unsigned qsize = queries.size();
+	unsigned qsize = grail.queries.size();
 	unsigned gsize = graph.num_vertices();
 	unsigned edges = graph.num_edges();
 
 	/***********************************************
 	 * @brief String arithmetic to get file names from path
 	 */
-  	std::size_t gn = filename.find_last_of("/\\");
-	std::size_t tn = testfilename.find_last_of("/\\");
+  	std::string graphname = filename.substr(filename.find_last_of("/\\")+1);
+	std::string testname  = testfilename.substr(filename.find_last_of("/\\")+1);
 	cout.setf(std::ios::fixed);
 	cout.precision(2);
 	cout << "\n__________________________________________________\n\n" << endl;
 	cout << "GRAIL FILE DATA:" << endl;
-	cout << "||Graph file:\t" << filename.substr(gn+1) << "\n||Test file:\t" <<
-			testfilename.substr(tn+1) << "\n||Traversals:\t" << DIM << endl;
+	cout << "||Graph file:\t" << graphname << "\n||Test file:\t" <<
+			testname << "\n||Traversals:\t" << DIM << endl;
 	cout << "Graph has " << gsize << " vertexes and " << edges << " edges.\n" <<
 			"Test done on " << qsize << " queries." << endl;
 	cout << "\n           #--------------------------#           \n" << endl;
@@ -137,23 +113,25 @@ int main(int argc, char **argv) {
 	cout << "\n__________________________________________________\n\n" << endl;
 
 #if DEBUG
-	std::string printpath = "./", queryfile, labelfile, reachfile, graphfile;
+	
+	std::string path = "./";
 	if(std::system("mkdir -p report") == 0)
-		printpath.append("report/");
+		path.append("report/");
 	else
 		cout << "Could not create report folder...";
-	printpath.append(filename.substr(0, filename.find(".")));
-	queryfile = labelfile = reachfile = graphfile = printpath;
+	if( graphname.find(".") != std::string::npos)
+		graphname = graphname.substr(0, graphname.find("."));
+	
+	ofstream gout(path+graphname+".graph");
+	ofstream qout(path+graphname+".query");
+	ofstream lout(path+graphname+".label");
+	ofstream rout(path+graphname+".reach");
 
-	ofstream gout(graphfile.append(".graph"));
-	ofstream qout(queryfile.append(".query"));
-	ofstream lout(labelfile.append(".label"));
-	ofstream rout(reachfile.append(".reach"));
 
-	pool.addJob(print_graph, std::ref(gout), std::ref(graph));
-	pool.addJob(print_query, std::ref(qout), std::ref(queries));
-	pool.addJob(print_labeling, std::ref(lout), std::ref(graph), DIM);
-	pool.addJob(print_reach, std::ref(rout), std::ref(grail), std::ref(queries));
+	pool.addJob( [&] { graph.writeGraph(gout); } );
+	pool.addJob( [&] { grail.print_query(qout); } );
+	pool.addJob( [&] { grail.print_labeling(lout); });
+	pool.addJob( [&] { grail.print_reach(rout); });
 	pool.waitFinished();
 #endif
 
@@ -207,81 +185,6 @@ static void parse_args(int argc, char **argv, std::string &fname, std::string &t
  	}
 }
 
-/**
- * @brief This function reads TEST_FILENAME and saves the queries in a std::vector of queries, a struct
- * that contains 2 integers (src,trg)
- * File structure required:
- *  src  trg opt(label)
- * 	int  int 
- * 	int  int 
- *  ...  ...
- * @param tfname TEST_FILENAME
- * @param queries Query vector
- */
-void read_test(const std::string &tfname, std::vector<query> &queries) {
-	int src,trg;
-	ifstream fstr(tfname);
-	if (!fstr) {
-		cout << "Error: Cannot open " << tfname << endl;
-		exit(EXIT_FAILURE);
-	}
-#if GROUND_TRUTH
-	int label;
-		while(fstr >> src >> trg >> label)
-			queries.push_back({src, trg, label});
-#else
-		while(fstr >> src >> trg)
-			queries.push_back({src, trg});
-#endif
-}
-
-#if DEBUG
-void print_graph(std::ostream &out, Graph &gr) {
-	gr.writeGraph(out);
-}
-
-void print_query(std::ostream &out, std::vector<query> &que) {
-	for(query &q: que)
-#if GROUND_TRUTH
-		out << q.src << " " << q.trg << " " << q.labels << endl;
-#else
-		out << q.src << " " << q.trg << endl;
-#endif
-}
-
-/**
- * @brief Debugging function, prints the queries 
- * 
- * @param out ostream object as ouput
- * @param grail Grail object that contains the reachability result
- * @param queries queries std::vector of query struct 
- */
-void print_reach(std::ostream &out, Grail &grail, std::vector<query> &queries) {
-	for (int i=0; i<queries.size(); i++)
-		out << queries[i].src << " " << queries[i].trg << " " << reachability[i] << endl;
-}
-#endif
-
-/**
- * @brief READS THE GRAIL AND STORES IT INTO THE GRAIL OBJECT 
- * This function allows the threadpool to compute a non-static member function by passing its 
- * Object class as a parameter. Each thread runs end-start queries and copies them to their respective
- * vector position concurrently with other vectors, access is thread safe since each vector chunk does not 
- * overlap. Reachability is either Bidirectional or Basic Reach 
- * @param grail Grail object
- * @param src 
- * @param trg 
- * @param query_id Query number to access the std::vector of reachability results
- */
-void reachWrapper(Grail &grail, const std::vector<query> &queries, const int start, const int end) {
-	std::vector<int> visited(grail.getGraph().num_vertices());
-	for (int i=start; i<end; i++)
-#if BIDI
-		reachability[i] = grail.bidirectionalReach(queries[i].src, queries[i].trg, i, visited);
-#else
-		reachability[i] = grail.reach(queries[i].src, queries[i].trg, i, visited);
-#endif
-}
 
 /**
  * @brief This wrapper function handles iteration over all of the queries. It takes
@@ -291,32 +194,16 @@ void reachWrapper(Grail &grail, const std::vector<query> &queries, const int sta
  * @param queries Query vector with all queries from TEST_FILENAME
  * @param pool Threadpool reference used to launch each query search
  */
-void search_reachability(Grail &grail, const std::vector<query> &queries, ThreadPool &pool) {
-	reachability.resize(queries.size());
-	int begin = 0, chunk = queries.size()/CHUNK_N;
-	while(begin < queries.size()) {
-		pool.addJob(reachWrapper, std::ref(grail), std::ref(queries), begin, begin+chunk);
+void search_reachability(Grail &grail, ThreadPool &pool) {
+	grail.setReachability(grail.queries.size());
+	int begin = 0, chunk = grail.queries.size()/CHUNK_N;
+	int end;
+	while(begin < grail.queries.size()) {
+		pool.addJob( [=, &grail] { grail.reachWrapper(begin,begin+chunk);} );
 		begin += chunk;
-		chunk = (begin+chunk < queries.size()) ? chunk : queries.size()-begin;
+		chunk = (begin+chunk < grail.queries.size()) ? chunk : grail.queries.size()-begin;
 	}
 	pool.waitFinished();
 }
 
-#if GROUND_TRUTH
-/**
- * @brief If a ground truth is present then we need to check the actual result of
- * our reachability report and we use this function to find successes and fails 
- * and then print out a percentage of successes.
- * 
- * @param queries 
- */
-void ground_truth_check(const std::vector<query> &queries){
-	int i = 0, success = 0, fail = 0;
-	for(int i =0; i<queries.size(); i++)
-		if( (!queries[i].labels && (reachability[i] == 'f' || reachability[i] == 'n' ))  || ( queries[i].labels && reachability[i] == 'r') )
-			success++;
-		else fail++;
-	cout.precision(2);
-	cout << "Success rate: " << success/(success+fail)*100 << "%" << endl;
-}
-#endif
+

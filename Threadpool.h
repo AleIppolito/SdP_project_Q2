@@ -25,7 +25,7 @@
 #include <chrono>
 #include <climits>
 #include <random>
-
+#include <regex>
 /**
  * @brief Choose whether to use Bidirectional Reach or Basic Reach
  * 
