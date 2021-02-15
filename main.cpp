@@ -5,7 +5,7 @@
  * @version 1
  * @date 2021-02-07
  * 
- * @copyright Copyright (c) 2021
+ * 
  */
 
 #include "Grail.h"
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
 	 * @brief String arithmetic to get file names from path
 	 */
   	std::string graphname = filename.substr(filename.find_last_of("/\\")+1);
-	std::string testname  = testfilename.substr(filename.find_last_of("/\\")+1);
+	std::string testname  = testfilename.substr(testfilename.find_last_of("/\\")+1);
 	cout.setf(std::ios::fixed);
 	cout.precision(2);
 	cout << "\n__________________________________________________\n\n" << endl;
@@ -188,9 +188,8 @@ static void parseArgs(int argc, char **argv, std::string &fname, std::string &tf
 /**
  * @brief This wrapper function handles iteration over all of the queries. It takes
  * a chunk of queries and hands each chunk to the task pool. Each thread then executes this task
- * and accesses the global vector 'reachability' concurrently. 
+ * and accesses the grail vector 'reachability' concurrently. 
  * @param grail Grail object
- * @param queries Query vector with all queries from TEST_FILENAME
  * @param pool Threadpool reference used to launch each query search
  */
 void searchReachability(Grail &grail, ThreadPool &pool) {

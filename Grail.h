@@ -5,7 +5,7 @@
  * @version 1
  * @date 2021-02-07
  *
- * @copyright Copyright (c) 2021
+ * @c
  */
 
 #ifndef GRAIL_H_
@@ -25,7 +25,10 @@ struct query{
 
 /**
  * @brief Class Grail
- * Contains a pointer to graph and number of labelings 
+ * Contains a pointer to graph 
+ * number of labelings
+ * reachability results 
+ * query questions
  */
 class Grail {
 	private:

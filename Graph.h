@@ -5,7 +5,7 @@
  * @version 1
  * @date 2021-02-07
  *
- * @copyright Copyright (c) 2021
+ * 
  */
 
 #ifndef GRAPH_H_

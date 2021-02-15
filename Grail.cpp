@@ -5,7 +5,7 @@
  * @version 1
  * @date 2021-02-07
  *
- * @copyright Copyright (c) 2021
+ *
  */
 
 #include "Grail.h"
@@ -17,6 +17,7 @@
  * 
  * @param graph 
  * @param Dim 
+ * @param testfilename
  * @param pool 
  */
 Grail::Grail(Graph& graph, const int Dim ,const std::string testfilename, ThreadPool& pool): g(graph), dim(Dim) {
@@ -39,7 +40,6 @@ Grail::~Grail() {}
  * @brief Wrapper function that starts a post order visit from each root, each root is
  * chosen randomly.
  * 
- * @param tree 
  * @param labelid 
  */
 void Grail::randomlabeling(const unsigned short labelid) {
@@ -58,7 +58,6 @@ void Grail::randomlabeling(const unsigned short labelid) {
  * @brief Basic visit, the tree is visited from vid randomly in a post order
  * traversal
  * 
- * @param tree 
  * @param vid 
  * @param pre_post 
  * @param visited 
@@ -201,7 +200,7 @@ void Grail::groundTruthCheck(std::ostream& out){
 }
 #endif
 
-
+#if DEBUG
 /**
  * @brief Printing function for debugging purposes, prints the labeling for each node
  * 
@@ -239,6 +238,8 @@ void Grail::printReach(std::ostream &out) {
 		out << queries[i].src << " " << queries[i].trg << " " << reachability[i] << endl;
 }
 
+
+#endif
 /**
  * @brief This function reads TEST_FILENAME and saves the queries in a std::vector of queries, a struct
  * that contains 2 integers (src,trg)
@@ -248,7 +249,6 @@ void Grail::printReach(std::ostream &out) {
  * 	int  int 
  *  ...  ...
  * @param tfname TEST_FILENAME
- * @param queries Query vector
  */
 void Grail::readQueries(const std::string &testFileName) {
 	int src,trg;
@@ -262,7 +262,7 @@ void Grail::readQueries(const std::string &testFileName) {
 			while(fstr >> src >> trg >> label)
 				queries.push_back({src, trg, label});
 	#else
-			while(fstr >> src >> trg)
+			while(fstr >> src >> trg )
 				queries.push_back({src, trg});
 	#endif
 }
@@ -270,15 +270,10 @@ void Grail::readQueries(const std::string &testFileName) {
 
 /**
  * @brief READS THE GRAIL AND STORES IT INTO THE GRAIL OBJECT 
- * This function allows the threadpool to compute a non-static member function by passing its 
- * Object class as a parameter. Each thread runs end-start queries and copies them to their respective
- * vector position concurrently with other vectors, access is thread safe since each vector chunk does not 
- * overlap. Reachability is either Bidirectional or Basic Reach 
- * @param grail Grail object
- * @param src 
- * @param trg 
- * @param query_id Query number to access the std::vector of reachability results
- */
+ * Answer all reachability queries from start to end inside queries array
+ * @param start
+ * @param end
+ * */
 void Grail::reachWrapper(int start, int end) {
 	std::vector<int> visited(g.numVertices());
 	for (int i=start; i<end; i++)

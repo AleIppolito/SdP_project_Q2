@@ -5,7 +5,7 @@
  * @version 1
  * @date 2021-02-07
  *
- * @copyright Copyright (c) 2021
+ * 
  */
 
 #ifndef THREADPOOL_H_
@@ -16,7 +16,6 @@
 #include <thread>
 #include <condition_variable>
 #include <mutex>
-#include <atomic>
 #include <fstream>
 #include <vector>
 #include <queue>
@@ -30,12 +29,12 @@
  * @brief Choose whether to use Bidirectional Reach or Basic Reach
  * 
  */
-#define DEBUG true
+#define DEBUG false
 
 /**
  * @brief Do the files contain a ground truth? 
  */
-#define GROUND_TRUTH true
+#define GROUND_TRUTH false
 
 /**
  * @brief This constant is used in the program to chunkify various operations
@@ -64,7 +63,6 @@ class ThreadPool {
 		std::queue<std::function<void()>> tasks;
 		std::mutex queue_mutex;
 		std::condition_variable cv_task, cv_finished;
-		std::atomic_uint processed;
 		unsigned busy;
 		bool stop;
     	void thread_proc();
