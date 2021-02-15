@@ -10,12 +10,12 @@
 
 #include "Threadpool.h"
 
-ThreadPool::ThreadPool() : busy(), processed(), stop() {
+ThreadPool::ThreadPool() : busy(), stop() {
 	for(unsigned int i=0; i<std::thread::hardware_concurrency(); ++i)
 		workers.emplace_back([&, this] {thread_proc();});
 }
 
-ThreadPool::ThreadPool(const unsigned n) : busy(), processed(), stop() {
+ThreadPool::ThreadPool(const unsigned n) : busy(), stop() {
 	for(unsigned int i=0; i<n; ++i)
 		workers.emplace_back([&, this] {thread_proc();});
 }
@@ -45,7 +45,6 @@ void ThreadPool::thread_proc() {
             tasks.pop();
             lock.unlock();
             fn();
-            ++processed;
             lock.lock();
             --busy;
             cv_finished.notify_one();
@@ -54,5 +53,3 @@ void ThreadPool::thread_proc() {
         }
     }
 }
-
-unsigned int ThreadPool::getProcessed() const {return processed;}

@@ -34,20 +34,9 @@ struct Label{
 struct Node {
 	std::vector<Label> labels;
 	EdgeList outList;
-#if BIDI
 	EdgeList inList;
-#else
-	bool isRoot;
-#endif
-
-#if BIDI
 	Node(const EdgeList in, const EdgeList out) : inList(in), outList(out) {} // @suppress("Class members should be properly initialized")
 	Node(){}
-#else
-	Node(const EdgeList out) : isRoot(true), outList(out) {} // @suppress("Class members should be properly initialized")
-	Node() : isRoot(true) {}
-	void setinList() {isRoot = false;}
-#endif
 
 	Label getLabel(const int &labelid) const {return labels[labelid];}
 	int getPost(const int &labelid) const {return getLabel(labelid).post;}
@@ -72,23 +61,18 @@ class Graph {
 		Graph(Gra&);
 		Graph(const std::string&, ThreadPool&);
 		~Graph();
-
+		void readChunk(const std::string&, const int, const int);
 		void makeinList(Gra &);
 
 		EdgeList getRoots() const;
-		EdgeList& out_edges(const int);
-#if BIDI
-		EdgeList& in_edges(const int);
-#endif
+		EdgeList& outEdges(const int);
+		EdgeList& inEdges(const int);
 
-		int out_degree(const int);
-#if BIDI
-		int in_degree(const int);
-#endif
-		int num_edges() const;
-		int num_vertices() const;
+		int outDegree(const int);
+		int inDegree(const int);
+		int numEdges() const;
+		int numVertices() const;
 		
-		void printGraph();
 		void writeGraph(std::ostream&);
 
 		Graph& operator=(const Graph&);
@@ -97,6 +81,6 @@ class Graph {
 		void clear();
 };
 
-void readChunk(const std::string&, Gra &, const int, const int);
+
 
 #endif /* GRAPH_H_ */

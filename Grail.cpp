@@ -22,7 +22,7 @@
 Grail::Grail(Graph& graph, const int Dim ,const std::string testfilename, ThreadPool& pool): g(graph), dim(Dim) {
 	int i;
 	pool.addJob( [this,testfilename] { readQueries(testfilename) ;} );
-	for(i=0; i<g.num_vertices(); i++)
+	for(i=0; i<g.numVertices(); i++)
 		graph[i].labels.resize(dim);
 	for(i=0; i<dim; i++)
 		pool.addJob( [this, i] { randomlabeling(i); } );
@@ -48,7 +48,7 @@ void Grail::randomlabeling(const unsigned short labelid) {
 	EdgeList roots = g.getRoots();
 	EdgeList::iterator sit;
 	int pre_post = 0;
-	std::vector<bool> visited(g.num_vertices(), false);
+	std::vector<bool> visited(g.numVertices(), false);
 	std::shuffle(roots.begin(), roots.end(), gen);
 	for (sit = roots.begin(); sit != roots.end(); sit++)
 		visit(*sit, ++pre_post, visited, labelid, gen);
@@ -68,10 +68,10 @@ void Grail::randomlabeling(const unsigned short labelid) {
  */
 int Grail::visit(const int vid, int& pre_post, std::vector<bool>& visited, const unsigned short labelid, std::mt19937 &gen) {
 	visited[vid] = true;
-	EdgeList el = g.out_edges(vid);
+	EdgeList el = g.outEdges(vid);
 	std::shuffle(el.begin(), el.end(), gen);
 	EdgeList::iterator eit;
-	int pre_order = g.num_vertices() + 1;
+	int pre_order = g.numVertices() + 1;
 
 	for(eit = el.begin(); eit != el.end(); eit++) {
 		if (!visited[*eit])
@@ -103,7 +103,6 @@ bool Grail::contains(const int src, const int trg) {
 	return true;
 }
 
-#if BIDI
 /**
  * @brief Bidirectional Reach answers reachability queries by first checking trivial cases and then
  * exploring the graph from 2 positions, target and source. Each iteration of the while expands the forward
@@ -129,7 +128,7 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 		return 'r'; 
 	if( !contains(src,trg) )
 		return 'n';
-	if( !g.out_degree(src) || !g.in_degree(trg) )
+	if( !g.outDegree(src) || !g.inDegree(trg) )
 		return 'f';
 
 	query_id++;					// 0 = -0
@@ -148,7 +147,7 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 		//LOOK DOWN
 		next = forward.front();
 		forward.pop();
-		el = g.out_edges(next);
+		el = g.outEdges(next);
 
 		for (ei = el.begin(); ei != el.end(); ei++)
 			if(visited[*ei]==-query_id){
@@ -160,7 +159,7 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 		//LOOK UP
 		next = backward.front();
 		backward.pop();
-		el = g.in_edges(next);
+		el = g.inEdges(next);
 		for (ei = el.begin(); ei != el.end(); ei++)
 			if(visited[*ei]==query_id)
 				return 'r';
@@ -171,48 +170,14 @@ char Grail::bidirectionalReach(const int src, const int trg, int query_id, std::
 	}
 return 'f';
 }
-#else
-/**
- * @brief Basic Reach, explores the trivial cases first and then starts a dfs that exits when src finds target or
- * src doesn't find target (false positive)
- * 
- * @param src 
- * @param trg 
- * @param query_id 
- * @param visited 
- * @return char 
- */
-char Grail::reach(const int src, const int trg, int query_id, std::vector<int> &visited) {
-	if(src == trg) return 'r';
-
-	if(!contains(src,trg)) return 'n';
-	if(!g.out_degree(src) || !g[trg].isRoot) return 'f';
-
-	visited[src]=++query_id;
-	return go_for_reach(src, trg, query_id, visited);
-}
-
-char Grail::go_for_reach(const int src, const int trg, int query_id, std::vector<int> &visited) {
-	if(src==trg) return 'r';
-
-	visited[src] = query_id;
-	EdgeList el = g.out_edges(src);
-	EdgeList::iterator eit;
-
-	for(eit = el.begin(); eit != el.end(); eit++)
-		if(visited[*eit]!=query_id && contains(*eit,trg))
-			if(go_for_reach(*eit, trg, query_id, visited) == 'r') return 'r';
-	return 'f';
-}
-#endif
 
 /*************************************************************************************
 Helper functions 
 *************************************************************************************/
 
-Graph& Grail::getGraph() const {return g;};
-
-
+int Grail::getQuerySize() const {
+	return queries.size();
+}
 void Grail::setReachability(const int size){
 	reachability.resize(size);
 }
@@ -225,7 +190,7 @@ void Grail::setReachability(const int size){
  * 
  * @param queries 
  */
-void Grail::ground_truth_check(std::ostream& out){
+void Grail::groundTruthCheck(std::ostream& out){
 	int i = 0, success = 0, fail = 0;
 	for(int i =0; i<queries.size(); i++)
 		if( (!queries[i].labels && (reachability[i] == 'f' || reachability[i] == 'n' ))  || ( queries[i].labels && reachability[i] == 'r') )
@@ -244,16 +209,16 @@ void Grail::ground_truth_check(std::ostream& out){
  * @param g 
  * @param dim 
  */
-void Grail::print_labeling(std::ostream &out) {
+void Grail::printLabeling(std::ostream &out) {
 	for(int i=0; i<dim; i++){
-		for(int j = 0; j < g.num_vertices();j++){
+		for(int j = 0; j < g.numVertices();j++){
 			out << j << " " << g[j].getPre(i) << " " << g[j].getPost(i) << endl; 
 		}
 	}
 }
 
 
-void Grail::print_query(std::ostream &out) {
+void Grail::printQuery(std::ostream &out) {
 	for(query &q: queries)
 	#if GROUND_TRUTH
 			out << q.src << " " << q.trg << " " << q.labels << endl;
@@ -269,7 +234,7 @@ void Grail::print_query(std::ostream &out) {
  * @param grail Grail object that contains the reachability result
  * @param queries queries std::vector of query struct 
  */
-void Grail::print_reach(std::ostream &out) {
+void Grail::printReach(std::ostream &out) {
 	for (int i=0; i<queries.size(); i++)
 		out << queries[i].src << " " << queries[i].trg << " " << reachability[i] << endl;
 }
@@ -315,11 +280,7 @@ void Grail::readQueries(const std::string &testFileName) {
  * @param query_id Query number to access the std::vector of reachability results
  */
 void Grail::reachWrapper(int start, int end) {
-	std::vector<int> visited(g.num_vertices());
+	std::vector<int> visited(g.numVertices());
 	for (int i=start; i<end; i++)
-#if BIDI
 		reachability[i] = bidirectionalReach(queries[i].src, queries[i].trg, i, visited);
-#else
-		reachability[i] = reach(queries[i].src, queries[i].trg, i, visited);
-#endif
 }

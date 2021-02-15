@@ -13,16 +13,15 @@
 /**
  * @brief Reachability query functions
  */
-void search_reachability(Grail&,  ThreadPool&);
+void searchReachability(Grail&,  ThreadPool&);
 //void reachWrapper(Grail&, const std::vector<query>&, const int, const int);
 
 /**
  * @brief Helper functions
  */
-static void parse_args(int, char **, std::string&, std::string&, int&);
+static void parseArgs(int, char **, std::string&, std::string&, int&);
 static void usage();
 
-void print_graph(std::ostream&, Graph&);
 
 // --------------------------------------------------------------------
 
@@ -46,7 +45,7 @@ int main(int argc, char **argv) {
 	int DIM;
 	ThreadPool pool;
 
-	parse_args(argc, argv, filename, testfilename, DIM);
+	parseArgs(argc, argv, filename, testfilename, DIM);
 
 	/***********************************************
 	 * @brief GRAPH FILE INPUT READING
@@ -75,7 +74,7 @@ int main(int argc, char **argv) {
 	cout << "Query testing..." << endl;
 
 	auto start_query = std::chrono::high_resolution_clock::now();
-	search_reachability(grail, pool);
+	searchReachability(grail, pool);
 	auto end_query = std::chrono::high_resolution_clock::now();
 
 	std::chrono::duration<double, std::milli> read_time = end_read - start_read;
@@ -85,12 +84,12 @@ int main(int argc, char **argv) {
 	auto program_time = read_time + label_time + query_time;
 
 #if GROUND_TRUTH
-	grail.ground_truth_check(cout);
+	grail.groundTruthCheck(cout);
 #endif
 
-	unsigned qsize = grail.queries.size();
-	unsigned gsize = graph.num_vertices();
-	unsigned edges = graph.num_edges();
+	unsigned qsize = grail.getQuerySize();
+	unsigned gsize = graph.numVertices();
+	unsigned edges = graph.numEdges();
 
 	/***********************************************
 	 * @brief String arithmetic to get file names from path
@@ -129,9 +128,9 @@ int main(int argc, char **argv) {
 
 
 	pool.addJob( [&] { graph.writeGraph(gout); } );
-	pool.addJob( [&] { grail.print_query(qout); } );
-	pool.addJob( [&] { grail.print_labeling(lout); });
-	pool.addJob( [&] { grail.print_reach(rout); });
+	pool.addJob( [&] { grail.printQuery(qout); } );
+	pool.addJob( [&] { grail.printLabeling(lout); });
+	pool.addJob( [&] { grail.printReach(rout); });
 	pool.waitFinished();
 #endif
 
@@ -170,13 +169,13 @@ static void usage() {		// here we must specify which search we want to implement
  *  src trg \n src1 trg1 \n ...
  * @param dim #TRAVERSALS This value is the amount of labels or traversals that the Grail should construct 
  */
-static void parse_args(int argc, char **argv, std::string &fname, std::string &tfname, int &dim) {
+static void parseArgs(int argc, char **argv, std::string &fname, std::string &tfname, int &dim) {
 	if (argc < 3) {	// minimum is ./grail <filename> <testfilename>
 		usage();
 		exit(EXIT_FAILURE);
 	}
  	fname = argv[1];
- 	if(isdigit(*argv[2])) {		// ./grail sample.gra 5 sample.que
+ 	if(isdigit(*argv[2])) {		// ./grail sample.gra 5 sample.que opt(ltype) 
  		dim = atoi(argv[2]);
  		tfname = argv[3];
  	} else {					// ./grail sample.gra sample.que
@@ -194,14 +193,15 @@ static void parse_args(int argc, char **argv, std::string &fname, std::string &t
  * @param queries Query vector with all queries from TEST_FILENAME
  * @param pool Threadpool reference used to launch each query search
  */
-void search_reachability(Grail &grail, ThreadPool &pool) {
-	grail.setReachability(grail.queries.size());
-	int begin = 0, chunk = grail.queries.size()/CHUNK_N;
+void searchReachability(Grail &grail, ThreadPool &pool) {
+	int size = grail.getQuerySize();
+	grail.setReachability(size);
+	int begin = 0, chunk = size/CHUNK_N;
 	int end;
-	while(begin < grail.queries.size()) {
+	while(begin < size) {
 		pool.addJob( [=, &grail] { grail.reachWrapper(begin,begin+chunk);} );
 		begin += chunk;
-		chunk = (begin+chunk < grail.queries.size()) ? chunk : grail.queries.size()-begin;
+		chunk = (begin+chunk < size) ? chunk : size-begin;
 	}
 	pool.waitFinished();
 }

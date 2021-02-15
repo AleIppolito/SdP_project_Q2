@@ -31,9 +31,11 @@ class Grail {
 	private:
 		Graph& g;
 		int dim;
-	public:
 		std::vector<char> reachability;
 		std::vector<query> queries;
+	public:
+		
+		
 
 		Grail(Graph&, const int, const std::string, ThreadPool&);
 		~Grail();
@@ -41,26 +43,22 @@ class Grail {
 		void randomlabeling(const unsigned short);
 		int visit(const int, int&, std::vector<bool>&, const unsigned short, std::mt19937&);
 		bool contains(const int, const int);
-#if BIDI
+
 		char bidirectionalReach(const int, const int, int, std::vector<int>&);
-#else
-		char reach(const int, const int, int, std::vector<int>&);
-		char go_for_reach(const int, const int, int, std::vector<int>&);
-#endif
 		void reachWrapper(const int start, const int end);
 		void readQueries(const std::string& );
 
+		int  getQuerySize() const ;
+		void setReachability(const int);
 #if DEBUG
-		void print_labeling(std::ostream& );
-		void print_reach(std::ostream& );
-		void print_query(std::ostream& );
+		void printLabeling(std::ostream& );
+		void printReach(std::ostream& );
+		void printQuery(std::ostream& );
 #endif
 
 #if GROUND_TRUTH
-		void ground_truth_check(std::ostream& );
+		void groundTruthCheck(std::ostream& );
 #endif
-		void setReachability(const int);
-		Graph& getGraph() const;
 };
 
 

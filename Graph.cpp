@@ -33,7 +33,7 @@ Graph::Graph(const std::string &filename, ThreadPool&p) {
 	graph = Gra(size, Node());
 	int chunk_size = size/CHUNK_N;
 	while (start_line < size) {
-		p.addJob(readChunk, std::ref(filename), std::ref(graph), start_line, start_line+chunk_size);
+		p.addJob( [=] {readChunk(filename, start_line, start_line+chunk_size); } );
 		start_line += chunk_size;		
 		chunk_size = (start_line+chunk_size < size) ? chunk_size : size-start_line;
 	}
@@ -43,7 +43,7 @@ Graph::Graph(const std::string &filename, ThreadPool&p) {
 
 Graph::~Graph() {clear();}
 
-void readChunk(const std::string &file, Gra &gr, const int start, const int end) {
+void Graph::readChunk(const std::string &file, const int start, const int end) {
 	ifstream fs(file);
 	if (!fs) {
 		cout << "Error: Cannot open " << file << endl;
@@ -55,7 +55,7 @@ void readChunk(const std::string &file, Gra &gr, const int start, const int end)
 		fs.ignore(UINT_MAX, '\n');
 	while(fs >> sid >> hash >> std::ws && sid < end) {
 		while(fs.peek() != '#' && fs >> tid >> std::ws)
-			gr[sid].outList.push_back(tid);
+			graph[sid].outList.push_back(tid);
 		fs.ignore();
 	}
 }
@@ -66,20 +66,11 @@ void readChunk(const std::string &file, Gra &gr, const int start, const int end)
  * nodes do not have ancestors (are Roots), this saves memory.
  * 
  */
-#if BIDI
 void Graph::makeinList(Gra &gra) {
 	for(int i=0; i<gra.size(); i++)
 		for(int &tg : gra[i].outList)
 			gra[tg].inList.push_back(i);
 }
-#else
-void Graph::makeinList(Gra &gra) {
-	for(Node &n : gra)
-		for(int &tg : n.outList)
-			if(gra[tg].isRoot)
-				gra[tg].setinList();
-}
-#endif
 
 /**
  * @brief Add a vertex (after correctness checks) to the graph
@@ -122,11 +113,7 @@ void Graph::writeGraph(std::ostream& out) {
 EdgeList Graph::getRoots() const {
 	EdgeList roots;
 	for(int i=0; i<graph.size(); i++)
-#if BIDI
 		if(graph[i].inList.size() == 0)
-#else
-		if(graph[i].isRoot)
-#endif
 			roots.push_back(i);
 	return roots;
 }
@@ -156,25 +143,23 @@ Node& Graph::operator[](const int &vid) {return graph[vid];}
  * Self explanatory titles.
  */
 
-int Graph::num_edges() const {	
+int Graph::numEdges() const {	
 	int num = 0;
 	for (const Node &git : graph)
 		num += git.outList.size();
 	return num;
 }
 
-int Graph::num_vertices() const {return graph.size();}
+int Graph::numVertices() const {return graph.size();}
 
-#if BIDI
-EdgeList& Graph::in_edges(const int trg) {return graph[trg].inList;}
+EdgeList& Graph::inEdges(const int trg) {return graph[trg].inList;}
 
-int Graph::in_degree(const int trg) {return graph[trg].inList.size();}
-#endif
+int Graph::inDegree(const int trg) {return graph[trg].inList.size();}
 
-EdgeList& Graph::out_edges(const int src) {return graph[src].outList;}
 
-int Graph::out_degree(const int src) {return graph[src].outList.size();}
+EdgeList& Graph::outEdges(const int src) {return graph[src].outList;}
 
-void Graph::printGraph() {writeGraph(cout);}
+int Graph::outDegree(const int src) {return graph[src].outList.size();}
+
 
 void Graph::clear() {graph.clear();}

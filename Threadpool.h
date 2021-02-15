@@ -30,7 +30,6 @@
  * @brief Choose whether to use Bidirectional Reach or Basic Reach
  * 
  */
-#define BIDI true
 #define DEBUG true
 
 /**
@@ -55,7 +54,6 @@ class ThreadPool {
 		ThreadPool(const unsigned);
 		~ThreadPool();
 		void waitFinished();
-		unsigned getProcessed() const;
 		template<typename F, typename ...A> void addJob(F&& f, A&&... a) {	// generic push function
 			std::unique_lock<std::mutex> lock(queue_mutex);
 			tasks.emplace([=]{f(a...);} );
